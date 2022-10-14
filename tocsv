@@ -52,7 +52,10 @@ machines.each do |m|
   filename = DATA_PATH + "#{m[1]}-#{DATETIME}.csv"
   CSV.open(filename, "w") do |csv|
     csv << HEADERS
-    record.each { |rec| csv << rec }
+    record.each do |rec|
+      rec[2] = ((rec[2] / m[2]) * 100).round(3)
+      csv << rec
+    end
   end
   puts "#{filename} generated"
 end
