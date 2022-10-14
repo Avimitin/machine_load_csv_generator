@@ -1,0 +1,26 @@
+#!/usr/bin/ruby
+
+require "csv"
+
+abort("No file given") if ARGV.length == 0
+content = CSV.read(ARGV[0])
+
+# Drop the header, we don't need it now
+data = content[1..-1]
+# Sort by load first, then sort by logined users amount
+sorted = data.sort_by { |data| [data[2], data[1]] }
+# Then drop 5%
+len = sorted.length
+pick = (len - (len * 0.05)).to_i
+puts "Droped #{len - pick} data"
+
+# Finally recover it to datetime order
+want = sorted[0...pick].sort_by { |data| data[0] }
+
+file = "p95-" + ARGV[0]
+CSV.open(file, "w") do |csv|
+  csv << content[0]
+  want.each { |e| csv << e }
+end
+
+puts "P95 analyzed file is now generated in: #{file}"
