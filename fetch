@@ -3,12 +3,14 @@
 require "time"
 require "dotenv/load"
 require "sqlite3"
+require "pathname"
 
 #
 # Configuration
 #
 
-DB_FILENAME = ENV["MACHINE_LOAD_DB"]
+DATA_PATH = Pathname.new(ENV["DATA_PATH"])
+DB_FILENAME = DATA_PATH + ENV["MACHINE_LOAD_DB"]
 MACHINE_ADDR = ENV["MACHINE_ADDR"].split(",")
 
 #
