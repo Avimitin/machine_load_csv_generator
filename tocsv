@@ -30,7 +30,7 @@ def get_data(db, machine_id)
   return(
     db
       .query(
-        "SELECT ttime, users, load FROM record WHERE machine=?",
+        "SELECT DATETIME(ttime, 'unixepoch') as isodate, users, load FROM record WHERE machine=?",
         machine_id
       )
       .collect { |row| row }
