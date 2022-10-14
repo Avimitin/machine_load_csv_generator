@@ -8,23 +8,21 @@ require "sqlite3"
 # Configuration
 #
 
-DB_FILENAME = "test.db"
-REMOTE_USER = "avimitin"
-MACHINE_ADDR = %w[]
-
-
+DB_FILENAME = ENV["MACHINE_LOAD_DB"]
+MACHINE_ADDR = ENV["MACHINE_ADDR"].split(",")
 
 #
 # Types and Functions
 #
 
-LoadAvg = Struct.new(:one, :five, :fifteen)
+LoadData = Struct.new(:users, :load)
 
 def init(db, machines)
   db.execute <<-SQL
 CREATE TABLE IF NOT EXISTS machine (
   id   INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT,
+  proc INT,
   UNIQUE(name)
 );
   SQL
@@ -34,36 +32,38 @@ CREATE TABLE IF NOT EXISTS record (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   ttime     INTEGER,
   machine   INT,
-  one_load  REAL,
-  five_load REAL,
-  fift_load REAL,
+  users     INT,
+  load      REAL,
   FOREIGN   KEY(machine) REFERENCES machine(id)
 );
   SQL
 
   machines.each do |m|
-    db.execute("INSERT OR IGNORE INTO machine (name) VALUES (?)", m)
+    proc = `ssh #{m} nproc`.strip.to_i
+    db.execute(
+      "INSERT OR IGNORE INTO machine (name, proc) VALUES (?, ?)",
+      m,
+      proc
+    )
   end
 end
 
 def insert_new_record(db, machine_id, record, test_time)
   db.execute(
-    "INSERT INTO record (ttime, machine, one_load, five_load, fift_load) VALUES (?, ?, ?, ?, ?)",
-    [test_time, machine_id, record.one, record.five, record.fifteen]
+    "INSERT INTO record (ttime, machine, users, load) VALUES (?, ?, ?, ?)",
+    [test_time, machine_id, record.users, record.load]
   )
 end
 
-def get_load_avg(machine, user)
-  respond = `ssh #{user}@#{machine} uptime`.strip
+def get_load(machine)
+  respond = `ssh #{machine} uptime`.strip
   result =
-    /load average: (?<one>[\d\.]+), (?<five>[\d\.]+), (?<fifteen>[\d\.]+)/.match(
+    /(?<user>\d+) users,\s+load average: [\d\.]+, (?<load>[\d\.]+)/.match(
       respond
     )
-  loadavg = LoadAvg.new(result["one"], result["five"], result["fifteen"])
-  return loadavg
+  data = LoadData.new(result["user"], result["load"])
+  return data
 end
-
-
 
 #
 # Main logic
@@ -75,7 +75,7 @@ init(db, MACHINE_ADDR)
 idx = 1
 MACHINE_ADDR.each do |addr|
   current_timestamp = Time.now.to_i
-  record = get_load_avg(addr, REMOTE_USER)
+  record = get_load(addr)
   insert_new_record(db, idx, record, current_timestamp)
   idx += 1
 end
