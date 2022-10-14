@@ -1,0 +1,11 @@
+[Unit]
+Description=The Unmatched Board load fetcher
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fetch-board-load
+EnvironmentFile=/etc/unmatched-load/runtime_env
+
+[Install]
+WantedBy=multi-user.target
