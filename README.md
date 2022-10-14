@@ -2,8 +2,11 @@
 
 ```bash
 # Fetch data
-ruby run.rb
+./fetch
 
 # Generate CSV
-ruby gen.rb
+./tocsv
+
+# View data (Require csvkit)
+csvlook $machine-$date.csv
 ```
