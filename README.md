@@ -7,6 +7,9 @@
 # Generate CSV
 ./tocsv
 
+# Filter Data
+./analyze
+
 # View data (Require csvkit)
-csvlook $machine-$date.csv
+csvlook p95-$machine-$date.csv
 ```
