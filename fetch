@@ -12,12 +12,26 @@ require "pathname"
 DATA_PATH = Pathname.new(ENV["DATA_PATH"])
 DB_FILENAME = DATA_PATH + ENV["MACHINE_LOAD_DB"]
 MACHINE_ADDR = ENV["MACHINE_ADDR"].split(",")
+PRIVATE_KEY = ENV["SSH_PRIVATE_KEY"]
+LOGIN_USER = ENV["SSH_LOGIN_USER"]
 
 #
 # Types and Functions
 #
 
 LoadData = Struct.new(:users, :load)
+
+def ssh(machine)
+  if PRIVATE_KEY and LOGIN_USER
+    return "ssh -i #{PRIVATE_KEY} #{LOGIN_USER}@#{machine}"
+  elsif PRIVATE_KEY
+    return "ssh -i #{PRIVATE_KEY} #{machine}"
+  elsif LOGIN_USER
+    return "ssh #{LOGIN_USER}@#{machine}"
+  else
+    return "ssh #{machine}"
+  end
+end
 
 def init(db, machines)
   db.execute <<-SQL
@@ -41,7 +55,7 @@ CREATE TABLE IF NOT EXISTS record (
   SQL
 
   machines.each do |m|
-    proc = `ssh #{m} nproc`.strip.to_i
+    proc = `#{ssh(m)} nproc`.strip.to_i
     db.execute(
       "INSERT OR IGNORE INTO machine (name, proc) VALUES (?, ?)",
       m,
@@ -58,7 +72,7 @@ def insert_new_record(db, machine_id, record, test_time)
 end
 
 def get_load(machine)
-  respond = `ssh #{machine} uptime`.strip
+  respond = `#{ssh(machine)} uptime`.strip
   result =
     /(?<user>\d+) users,\s+load average: [\d\.]+, (?<load>[\d\.]+)/.match(
       respond
