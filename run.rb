@@ -1,3 +1,5 @@
+#!/usr/bin/ruby
+
 require "time"
 require "dotenv/load"
 require "sqlite3"
