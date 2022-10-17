@@ -6,7 +6,6 @@ require "sqlite3"
 require "time"
 require "pathname"
 
-
 #
 # Configuration
 #
@@ -14,8 +13,7 @@ require "pathname"
 DATA_PATH = Pathname.new(ENV["DATA_PATH"])
 DB_FILENAME = DATA_PATH + ENV["MACHINE_LOAD_DB"]
 DATETIME = Time.new().strftime("%Y-%m")
-HEADERS = ["Test DateTime", "Logined Users Amount", "Machine Load"]
-
+HEADERS = ["DateTime", "Logined Users", "Machine Load"]
 
 #
 # Utils function
@@ -36,7 +34,6 @@ def get_data(db, machine_id)
       .collect { |row| row }
   )
 end
-
 
 #
 # Main logic

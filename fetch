@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS record (
   SQL
 
   machines.each do |m|
-    proc = `#{ssh(m)} nproc`.strip.to_i
+    proc = `#{ssh(m)} nproc`
+    proc = "-1" if $?.to_i != 0
+    proc = proc.strip.to_i
     db.execute(
       "INSERT OR IGNORE INTO machine (name, proc) VALUES (?, ?)",
       m,
@@ -72,7 +74,8 @@ def insert_new_record(db, machine_id, record, test_time)
 end
 
 def get_load(machine)
-  respond = `#{ssh(machine)} uptime`.strip
+  respond = `#{ssh(machine)} uptime`
+  return LoadData.new(0, 0) if $?.to_i != 0
   result =
     /(?<user>\d+) users,\s+load average: [\d\.]+, (?<load>[\d\.]+)/.match(
       respond
