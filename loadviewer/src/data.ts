@@ -3,6 +3,11 @@ interface FakeCache {
 }
 
 let fakeCache: FakeCache = {};
+const fakeMachines: Array<Machine> = [
+  { id: 1, name: "magmortar" },
+  { id: 2, name: "larvesta" },
+  { id: 3, name: "feltchinder" },
+];
 
 async function fakeNetwork(key: string | null) {
   if (key === null) {
@@ -29,15 +34,10 @@ interface Record {
 
 }
 
-export async function GetMachineById(id: number) {
+export async function getMachineById(id: number) {
   await fakeNetwork(`boardId:${id}`);
-  const machines: Array<Machine> = [
-    { id: 1, name: "magmortar" },
-    { id: 2, name: "larvesta"},
-    { id: 3, name: "feltchinder"},
-  ];
 
-  const mach = machines.find(machine => machine.id === id);
+  const mach = fakeMachines.find(machine => machine.id === id);
   if (mach === undefined) {
     throw new Error(`Machine ${id} not found`)
   }
