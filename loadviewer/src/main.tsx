@@ -4,13 +4,21 @@ import { createBrowserRouter, RouterProvider, Route } from "react-router-dom";
 import './index.css'
 import Root from "./routes/root";
 import ErrorPage from './error';
+import Board, {loader as boardLoader} from './routes/board';
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
     errorElement: <ErrorPage />,
-  }
+    children: [
+      {
+        path: "/board/:boardId",
+        element: <Board />,
+        loader: boardLoader,
+      }
+    ]
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
