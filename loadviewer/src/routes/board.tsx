@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs, useLoaderData } from "react-router-dom"
 import { getLoadsByMid, getMachineById, Machine, Record } from "../data";
-import { CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } from "chart.js";
+import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } from "chart.js";
 import { Line } from 'react-chartjs-2';
 
 ChartJS.register(
@@ -11,14 +11,39 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Filler,
 );
 
 const options = {
   responsive: true,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  },
+  stacked: false,
   plugins: {
     legend: {
       position: 'top' as const,
     },
+    title: {
+      display: true,
+      text: "CPU Usage & Loggined Users",
+    }
+  },
+  scales: {
+    load: {
+      type: 'linear' as const,
+      display: true,
+      position: 'left' as const,
+    },
+    users: {
+      type: 'linear' as const,
+      display: true,
+      position: 'right' as const,
+      grid: {
+        drawOnChartArea: false,
+      }
+    }
   }
 }
 
@@ -40,21 +65,24 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<BoardData>
 export default function Board() {
   const { name, records } = useLoaderData() as BoardData;
   const labels = records.map(rec => rec.ttime.getDate());
-  const loads = {
-    label: "Machine CPU Usage",
-    data: records.map(rec => rec.load),
-    borderColor: 'rgb(255, 99, 132)',
-    backgroundColor: 'rgba(255, 99, 132, 0.5)',
-  };
   const users = {
     label: "Loggined Users",
     data: records.map(rec => rec.users),
     borderColor: 'rgb(53, 162, 235)',
     backgroundColor: 'rgba(53, 162, 235, 0.5)',
+    yAxisID: 'users',
+  };
+  const loads = {
+    label: "Machine CPU Usage",
+    fill: true,
+    data: records.map(rec => rec.load),
+    borderColor: 'rgb(115,238,163)',
+    backgroundColor: 'rgba(115,238,163,0.7)',
+    yAxisID: 'load',
   };
 
   return (<div>
     <h3>Board: {name}</h3>
-    <Line options={options} data={{ labels, datasets: [loads, users] }} />
+    <Line options={options} data={{ labels, datasets: [users, loads] }} />
   </div>);
 }
