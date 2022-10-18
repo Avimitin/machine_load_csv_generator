@@ -38,7 +38,6 @@ def init(db, machines)
 CREATE TABLE IF NOT EXISTS machine (
   id   INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT,
-  proc INT,
   UNIQUE(name)
 );
   SQL
@@ -55,14 +54,7 @@ CREATE TABLE IF NOT EXISTS record (
   SQL
 
   machines.each do |m|
-    proc = `#{ssh(m)} nproc`
-    proc = "-1" if $?.to_i != 0
-    proc = proc.strip.to_i
-    db.execute(
-      "INSERT OR IGNORE INTO machine (name, proc) VALUES (?, ?)",
-      m,
-      proc
-    )
+    db.execute("INSERT OR IGNORE INTO machine (name) VALUES (?)", m)
   end
 end
 

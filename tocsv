@@ -43,14 +43,16 @@ db = SQLite3::Database.open(DB_FILENAME)
 machines = get_all_machine(db)
 
 machines.each do |m|
-  # m[0] is primary id in database, m[1] is the name alias of the machine, m[2] is the proc amount of the machine
+  # m[0] is primary id in database, m[1] is the name alias of the machine
   record = get_data(db, m[0])
 
   filename = DATA_PATH + "#{m[1]}-#{DATETIME}.csv"
   CSV.open(filename, "w") do |csv|
     csv << HEADERS
+    # rec[0] is test datetime, rec[1] is users, rec[2] is load
     record.each do |rec|
-      rec[2] = ((rec[2] / m[2]) * 100).round(3)
+      # unmatched have 4 cpu cores
+      rec[2] = ((rec[2] / 4) * 100).round(3)
       csv << rec
     end
   end
