@@ -70,16 +70,20 @@ function BoardInfo({ records }: { records: Record[] }) {
 
   return (
     <table>
-      <tr>
-        <th><span>min load</span></th>
-        <th><span>max load</span></th>
-        <th><span>avg load</span></th>
-      </tr>
-      <tr>
-        <td>{minLoad * 100}</td>
-        <td>{maxLoad * 100}</td>
-        <td>{avgLoad * 100}</td>
-      </tr>
+      <thead>
+        <tr>
+          <th><span>min load</span></th>
+          <th><span>max load</span></th>
+          <th><span>avg load</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{minLoad * 100}</td>
+          <td>{maxLoad * 100}</td>
+          <td>{avgLoad * 100}</td>
+        </tr>
+      </tbody>
     </table>
   );
 }
