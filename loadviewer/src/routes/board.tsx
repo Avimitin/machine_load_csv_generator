@@ -62,6 +62,28 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<BoardData>
   return { name: machine.name, records: records };
 }
 
+function BoardInfo({ records }: { records: Record[] }) {
+  const load = records.map(rec => rec.load);
+  const minLoad = Math.min(...load);
+  const maxLoad = Math.max(...load);
+  const avgLoad = load.reduce((a, b) => a + b) / load.length;
+
+  return (
+    <table>
+      <tr>
+        <th><span>min load</span></th>
+        <th><span>max load</span></th>
+        <th><span>avg load</span></th>
+      </tr>
+      <tr>
+        <td>{minLoad * 100}</td>
+        <td>{maxLoad * 100}</td>
+        <td>{avgLoad * 100}</td>
+      </tr>
+    </table>
+  );
+}
+
 export default function Board() {
   const { name, records } = useLoaderData() as BoardData;
   const labels = records.map(rec => rec.ttime.getDate());
@@ -84,5 +106,6 @@ export default function Board() {
   return (<div>
     <h3>Board: {name}</h3>
     <Line options={options} data={{ labels, datasets: [users, loads] }} />
+    <BoardInfo records={records} />
   </div>);
 }

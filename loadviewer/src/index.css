@@ -380,3 +380,29 @@ i {
   justify-content: center;
   width: 100%;
 }
+
+table {
+  margin: 20px 0 40px 0;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  display: table;
+}
+
+tr {
+  display: table-row;
+}
+
+td {
+  display: table-cell;
+  padding: 6px 12px;
+}
+
+td::after {
+  content: "%";
+}
+
+th {
+  font-weight: 900;
+  color: #fff;
+  background: #038e40;
+}
