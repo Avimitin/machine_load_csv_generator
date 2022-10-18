@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Route } from "react-router-dom";
 import './index.css'
-import Root from "./routes/root";
+import Root, {loader as rootLoader} from "./routes/root";
 import ErrorPage from './error';
 import Board, {loader as boardLoader} from './routes/board';
 
@@ -10,6 +10,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
+    loader: rootLoader,
     errorElement: <ErrorPage />,
     children: [
       {

@@ -55,6 +55,11 @@ export interface Record {
   load: number,
 }
 
+export async function getMachines() {
+  await fakeNetwork(null);
+  return fakeMachines.slice();
+}
+
 export async function getMachineById(id: number) {
   await fakeNetwork(`boardId:${id}`);
 

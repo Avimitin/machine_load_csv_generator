@@ -1,7 +1,20 @@
-import { Link } from "react-router-dom";
+import { NavLink, useLoaderData, useNavigation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+import { getMachines, Machine } from "../data";
+
+export async function loader() {
+  const boards = await getMachines();
+  return { boards };
+}
+
+interface data {
+  boards: Machine[],
+}
 
 export default function Root() {
+  const { boards } = useLoaderData() as data;
+  const navigation = useNavigation();
+
   return (
     <>
       <div id="sidebar">
@@ -28,16 +41,23 @@ export default function Root() {
         </div>
         <nav>
           <ul>
-            <li>
-              <Link to={`board/1`}>Magmortar</Link>
-            </li>
-            <li>
-              <Link to={`board/2`}>Larvesta</Link>
-            </li>
+            {
+              boards.length > 0
+                ? boards.map(
+                  (b) => (
+                    <li key={b.id}>
+                      <NavLink to={`board/${b.id}`}
+                        className={({ isActive, isPending }) => isActive ? "active" : isPending ? "pending" : ""}
+                      >{b.name}</NavLink>
+                    </li>)
+                )
+                :
+                <p><i>No board</i></p>
+            }
           </ul>
         </nav>
       </div>
-      <div id="detail">
+      <div id="detail" className={navigation.state === "loading" ? "loading" : ""}>
         <Outlet />
       </div>
     </>
