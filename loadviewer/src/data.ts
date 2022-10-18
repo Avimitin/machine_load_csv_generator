@@ -25,7 +25,7 @@ const fakeRecords2: Array<Record> = [
   { ttime: new Date(2022, 10, 21, 17, 8, 32), users: 8, load: 0.61 },
 ];
 
-const fakeStorage: {[index: number]: Array<Record>} = {
+const fakeStorage: { [index: number]: Array<Record> } = {
   1: fakeRecords1,
   2: fakeRecords2,
 }
@@ -55,6 +55,19 @@ export interface Record {
   ttime: Date,
   users: number,
   load: number,
+}
+
+function parseCSV(s: string): Record[] {
+  const lines = s.split("\n")
+  //slice(1) to skip the header
+  const records = lines.slice(1).map(li => {
+    const val = li.split(",")
+    const ttime = new Date(val[0]);
+    const users = parseInt(val[1]);
+    const load = parseFloat(val[2]);
+    return { ttime, users, load }
+  })
+  return records;
 }
 
 export async function getMachines(query: string | null) {
