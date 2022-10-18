@@ -1,3 +1,5 @@
+import { matchSorter } from "match-sorter";
+
 interface FakeCache {
   [index: string]: boolean
 }
@@ -55,9 +57,14 @@ export interface Record {
   load: number,
 }
 
-export async function getMachines() {
-  await fakeNetwork(null);
-  return fakeMachines.slice();
+export async function getMachines(query: string | null) {
+  await fakeNetwork(`getMachines:${query}`);
+  let contacts = [];
+  if (query !== null) {
+    contacts = matchSorter(fakeMachines, query, { keys: ["name"] });
+    return contacts.sort((a, b) => a.id < b.id ? 1 : 0);
+  }
+  return fakeMachines;
 }
 
 export async function getMachineById(id: number) {
