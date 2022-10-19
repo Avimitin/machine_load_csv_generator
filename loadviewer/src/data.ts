@@ -56,15 +56,17 @@ export interface Record {
 }
 
 function parseCSV(s: string): Record[] {
-  const lines = s.split("\n")
-  //slice(1) to skip the header
-  const records = lines.slice(1).map(li => {
+  // slice(1, -1) to skip the header and the trailing blank line
+  const lines = s.split("\n").slice(1, -1);
+
+  const records = lines.map(li => {
     const val = li.split(",")
     const ttime = new Date(val[0]);
     const users = parseInt(val[1]);
     const load = parseFloat(val[2]);
     return { ttime, users, load }
   })
+
   return records;
 }
 
@@ -90,6 +92,15 @@ export async function getLoadsByMid(id: number) {
     throw new Error(`Machine ${id} not found`);
   }
 
+  return record;
+}
+
+export async function getLoadsByMachName(mname: string) {
+  const files = await GhCntFetcher(mname);
+  // TODO: Remember to add a form to select date
+  const csvdata = await fetch(files[0].download_url).then((resp) => resp.text());
+
+  const record = parseCSV(csvdata);
   return record;
 }
 
