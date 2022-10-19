@@ -47,9 +47,9 @@ machines = get_all_machine(db)
 machines.each do |m|
   # m[0] is primary id in database, m[1] is the name alias of the machine
   record = get_data(db, m[0])
-  prefix = CSV_OUTPUT + "#{DATETIME}"
+  prefix = CSV_OUTPUT + "#{m[1]}"
   FileUtils.mkdir_p(prefix)
-  filename = prefix + "#{m[1]}.csv"
+  filename = prefix + "#{DATETIME}.csv"
 
   CSV.open(filename, "w") do |csv|
     csv << HEADERS
