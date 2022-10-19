@@ -19,13 +19,14 @@ function parseCSV(s: string): Record[] {
   return records;
 }
 
-export interface GitHubRootDirResponse {
+export interface GitHubContent {
   path: string,
   download_url: string,
+  type: "dir" | "file",
 }
 
 export async function getLoadsByMachName(mname: string) {
-  const files = await ghCntFetcher(mname);
+  const files: GitHubContent[] = await ghCntFetcher(mname);
   // TODO: Remember to add a form to select date
   const csvdata = await fetch(files[0].download_url).then((resp) => resp.text());
 
@@ -33,11 +34,11 @@ export async function getLoadsByMachName(mname: string) {
   return record;
 }
 
-export async function ghCntFetcher(path: string) {
+export async function ghCntFetcher<T>(path: string) {
   const base = "https://api.github.com/repos/Avimitin/unmatched-load-data/contents/";
   const api = path === "/" ? new URL(base) : new URL(path, base);
 
-  const files: GitHubRootDirResponse[] = await fetch(api, {
+  const files: T = await fetch(api, {
     method: "GET",
     headers: { "Accept": "application/vnd.github+json" }
   })
@@ -53,7 +54,7 @@ export interface MachineAliasInfo {
 }
 
 export async function getAllMachineAlias() {
-  const files = await fetch("https://api.github.com/repos/Avimitin/unmatched-load-data/contents/all.csv").then(res => res.json());
+  const files: GitHubContent = await ghCntFetcher("all.csv");
   const csv = await fetch(files.download_url).then(res => res.text());
   const row = csv.split("\n").slice(0, -1);
   const info = row.map(line => {

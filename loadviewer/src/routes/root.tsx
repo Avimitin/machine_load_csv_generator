@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { NavLink, Form, useLoaderData, useNavigation, useSubmit } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { getAllMachineAlias, ghCntFetcher, GitHubRootDirResponse, MachineAliasInfo } from "../data";
+import { getAllMachineAlias, ghCntFetcher, GitHubContent, MachineAliasInfo } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -12,16 +12,76 @@ export async function loader({ request }: any) {
 }
 
 interface data {
-  boards: GitHubRootDirResponse[],
+  boards: GitHubContent[],
   q: string,
 }
 
+type GhFileResp = {
+  data?: GitHubContent[],
+  isLoading: boolean,
+  error: any,
+}
+
+type MachineAliasResp = {
+  data?: MachineAliasInfo[],
+  isLoading: boolean,
+  error: any,
+}
+
+function Nav({ to, content }: { to: string, content: string }) {
+  return (
+    <NavLink
+      to={`board/${to}`}
+      className={({ isActive, isPending }) =>
+        isActive ? "active" : isPending ? "pending" : ""
+      }
+    >
+      {content}
+    </NavLink>
+  );
+}
+
+function NavBar({ ghfile, mar }: { ghfile: GhFileResp, mar: MachineAliasResp }) {
+  if (ghfile.isLoading) {
+    return (<nav><div><h4>Loading...</h4></div></nav>)
+  }
+  if (!ghfile.data || ghfile.data?.length == 0) {
+    return (<nav><p><i>No board</i></p></nav>)
+  }
+
+  const belong = ((machine: GitHubContent) => {
+    if (mar.isLoading) {
+      return "";
+    }
+    const a = mar.data?.find(a => a.alias === machine.path);
+    if (!a) {
+      return "";
+    }
+    return `(${a.belong})`;
+  });
+
+  const data = ghfile.data.filter(f => f.type === "dir");
+
+  const list = data.map(machine => (
+    <li key={machine.path}>
+      <Nav to={machine.path} content={`${machine.path}${belong(machine)}`} />
+    </li>
+  ));
+
+  return (
+    <nav>
+      <ul>
+        {list}
+      </ul>
+    </nav>
+  );
+}
 
 export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  let { data, error } = useSWR("/", ghCntFetcher);
+  let { data, error } = useSWR<GitHubContent[]>("/", ghCntFetcher);
   const { data: alias, error: aliasErr } = useSWR("getAllMachinesAlias", getAllMachineAlias);
   if (error) {
     throw new Error(`Fail to fetch machines data ${error}`);
@@ -69,43 +129,18 @@ export default function Root() {
             ></div>
           </Form>
         </div>
-        <nav>
-          {
-            (data === undefined
-              ? <div id="zero-state"><h4>Loading</h4></div>
-              :
-              <ul>
-                {
-                  data.length > 0
-                    ? data.map(
-                      (machine) => (
-                        <li key={machine.path}>
-                          <NavLink
-                            to={`board/${machine.path}`}
-                            className={({ isActive, isPending }) =>
-                              isActive ? "active" : isPending ? "pending" : ""
-                            }
-                          >
-                            {machine.path} {(() => {
-                              if (aliasErr || !alias) {
-                                return "";
-                              }
-                              const a = alias.find(a => a.alias === machine.path);
-                              if (!a) {
-                                return "";
-                              }
-                              return `(${a.belong})`;
-                            })()}
-                          </NavLink>
-                        </li>)
-                    )
-                    :
-                    <p><i>No board</i></p>
-                }
-              </ul>
-            )
-          }
-        </nav>
+        <NavBar
+          ghfile={{
+            data: data,
+            isLoading: !error && !data,
+            error: error,
+          }}
+          mar={{
+            data: alias,
+            isLoading: !aliasErr && !alias,
+            error: aliasErr,
+          }}
+        />
       </div>
       <div id="detail" className={navigation.state === "loading" ? "loading" : ""}>
         <Outlet />
