@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { NavLink, Form, useLoaderData, useNavigation, useSubmit } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { GhCntFetcher, GitHubRootDirResponse } from "../data";
+import { getAllMachineAlias, ghCntFetcher, GitHubRootDirResponse, MachineAliasInfo } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -16,11 +16,13 @@ interface data {
   q: string,
 }
 
+
 export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  let { data, error } = useSWR("/", GhCntFetcher);
+  let { data, error } = useSWR("/", ghCntFetcher);
+  const { data: alias, error: aliasErr } = useSWR("getAllMachinesAlias", getAllMachineAlias);
   if (error) {
     throw new Error(`Fail to fetch machines data ${error}`);
   }
@@ -84,7 +86,16 @@ export default function Root() {
                               isActive ? "active" : isPending ? "pending" : ""
                             }
                           >
-                            {machine.path}
+                            {machine.path} {(() => {
+                              if (aliasErr || !alias) {
+                                return "";
+                              }
+                              const a = alias.find(a => a.alias === machine.path);
+                              if (!a) {
+                                return "";
+                              }
+                              return `(${a.belong})`;
+                            })()}
                           </NavLink>
                         </li>)
                     )
