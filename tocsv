@@ -5,12 +5,14 @@ require "dotenv/load"
 require "sqlite3"
 require "time"
 require "pathname"
+require "fileutils"
 
 #
 # Configuration
 #
 
 DATA_PATH = Pathname.new(ENV["DATA_PATH"])
+CSV_OUTPUT = Pathname.new(ENV["CSV_OUTPUT_DIR"])
 DB_FILENAME = DATA_PATH + ENV["MACHINE_LOAD_DB"]
 DATETIME = Time.new().strftime("%Y-%m")
 HEADERS = ["DateTime", "Logined Users", "Machine Load"]
@@ -45,8 +47,10 @@ machines = get_all_machine(db)
 machines.each do |m|
   # m[0] is primary id in database, m[1] is the name alias of the machine
   record = get_data(db, m[0])
+  prefix = CSV_OUTPUT + "#{DATETIME}"
+  FileUtils.mkdir_p(prefix)
+  filename = prefix + "#{m[1]}.csv"
 
-  filename = DATA_PATH + "#{m[1]}-#{DATETIME}.csv"
   CSV.open(filename, "w") do |csv|
     csv << HEADERS
     # rec[0] is test datetime, rec[1] is users, rec[2] is load
