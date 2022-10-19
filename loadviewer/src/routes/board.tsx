@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, useLoaderData } from "react-router-dom"
+import { isRouteErrorResponse, LoaderFunctionArgs, useLoaderData, useRouteError } from "react-router-dom"
 import { getLoadsByMachName, Record } from "../data";
 import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } from "chart.js";
 import { Line } from 'react-chartjs-2';
@@ -63,7 +63,6 @@ function BoardInfo({ records }: { records: Record[] }) {
   const avgLoad = load.reduce((a, b) => a + b) / load.length;
   const idx = Math.round(load.length * 0.95) - 1;
   const sorted = load.sort();
-  console.log (`idx: ${idx}, s: ${sorted}`);
   const p95Load = sorted[idx];
 
   return (
@@ -121,4 +120,31 @@ export default function Board() {
     <Line options={options} data={{ labels, datasets: [users, loads] }} />
     <BoardInfo records={data} />
   </div>);
+}
+
+export function ErrorPage() {
+  const error = useRouteError();
+  console.error(error);
+
+  if (isRouteErrorResponse(error)) {
+    return (
+      <div id="error-page">
+        <h1>Oops</h1>
+        <p>Sorry, an unexpected error occur</p>
+        <p>
+          <i>{error.statusText}</i>
+        </p>
+      </div>
+    );
+  } else {
+    return (
+      <div id="error-page">
+        <h1>Oops, error occur</h1>
+        <h3>Details</h3>
+        <code>
+          {`${error}`}
+        </code>
+      </div>
+    );
+  }
 }
