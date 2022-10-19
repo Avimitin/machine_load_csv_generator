@@ -78,10 +78,10 @@ function BoardInfo({ records }: { records: Record[] }) {
       </thead>
       <tbody>
         <tr>
-          <td>{minLoad * 100}</td>
-          <td>{maxLoad * 100}</td>
-          <td>{avgLoad * 100}</td>
-          <td>{p95Load * 100}</td>
+          <td>{minLoad}</td>
+          <td>{maxLoad}</td>
+          <td>{avgLoad}</td>
+          <td>{p95Load}</td>
         </tr>
       </tbody>
     </table>
