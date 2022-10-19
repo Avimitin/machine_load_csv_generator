@@ -1,0 +1,29 @@
+name: Build Static Page
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Build
+        run: cd loadviewer && npm install && npm run build
+      - name: Deploy
+        env:
+          USER: 'DataBot'
+          EMAIL: 'avimitin@gmail.com'
+          REPO: 'github.com/Avimitin/unmatched-load-data'
+          TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global user.name $USER
+          git config --global user.email $EMAIL
+          cd loadviewer/dist && git init -b page && git add .
+          git commit -m "Generate Static Page"
+          git push --force "https://avimitin:$TOKEN@$REPO" page:page
