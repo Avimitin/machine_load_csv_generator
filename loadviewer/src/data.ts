@@ -1,5 +1,3 @@
-import { matchSorter } from "match-sorter";
-
 interface FakeCache {
   [index: string]: boolean
 }
@@ -70,14 +68,9 @@ function parseCSV(s: string): Record[] {
   return records;
 }
 
-export async function getMachines(query: string | null) {
-  await fakeNetwork(`getMachines:${query}`);
-  let contacts = [];
-  if (query !== null) {
-    contacts = matchSorter(fakeMachines, query, { keys: ["name"] });
-    return contacts.sort((a, b) => a.id < b.id ? 1 : 0);
-  }
-  return fakeMachines;
+export interface GitHubRootDirResponse {
+  path: string,
+  download_url: string,
 }
 
 export async function getMachineById(id: number) {
@@ -98,4 +91,18 @@ export async function getLoadsByMid(id: number) {
   }
 
   return record;
+}
+
+export async function GhCntFetcher(path: string) {
+  const base = "https://api.github.com/repos/Avimitin/unmatched-load-data/contents/";
+  const api = path === "/" ? new URL(base) : new URL(path, base);
+
+  const files: GitHubRootDirResponse[] = await fetch(api, {
+    method: "GET",
+    headers: { "Accept": "application/vnd.github+json" }
+  })
+    .then(resp => resp.json())
+    .catch(err => { console.log(err); throw new Error("Fail to fetch machines") });
+
+  return files;
 }
