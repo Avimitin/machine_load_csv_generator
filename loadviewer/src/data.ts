@@ -25,6 +25,12 @@ export interface GitHubContent {
   type: "dir" | "file",
 }
 
+function percentile<T>(a: T[], sf?: (a: T, b: T) => number): T {
+  const sorted = a.sort(sf);
+  const idx = Math.ceil(sorted.length * 0.95) - 1;
+  return sorted[idx];
+}
+
 export async function getLoadsByMachName(mname: string) {
   const files: GitHubContent[] = await ghCntFetcher(mname);
   // TODO: Remember to add a form to select date
@@ -45,15 +51,16 @@ export async function getLoadsByMachName(mname: string) {
   while (j < records.length) {
     if (records[i].ttime.getDate() !== records[j].ttime.getDate()) {
       // calculate 95th percentile
-      const sorted = records.slice(i, j).sort((a, b) => a.load - b.load);
-      const idx = Math.round(sorted.length * 0.95) - 1;
-      const pick = sorted[idx];
-      result.push(pick);
+      result.push(percentile(records.slice(i, j), (a, b) => a.load - b.load));
 
       i = j;
     }
 
     j += 1;
+  }
+
+  if (i == 0) {
+    result.push(percentile(records, (a, b) => a.load - b.load));
   }
 
   return result;
