@@ -48,7 +48,7 @@ def get_load(machine)
   return LoadData.new(0, 0) if $CHILD_STATUS.to_i != 0
 
   result =
-    /(?<user>\d+) users,\s+load average: [\d.]+, (?<load>[\d.]+)/.match(
+    /(?<user>\d+) users?,\s+load average: [\d.]+, (?<load>[\d.]+)/.match(
       respond
     )
 
