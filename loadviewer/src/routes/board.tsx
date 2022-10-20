@@ -60,7 +60,7 @@ function BoardInfo({ records }: { records: Record[] }) {
   const load = records.map(rec => rec.load);
   const minLoad = Math.min(...load);
   const maxLoad = Math.max(...load);
-  const avgLoad = load.reduce((a, b) => a + b) / load.length;
+  const avgLoad = load.length > 1 ? load.reduce((a, b) => a + b) / load.length : load[0];
   const idx = Math.round(load.length * 0.95) - 1;
   const sorted = load.sort();
   const p95Load = sorted[idx];
@@ -72,7 +72,7 @@ function BoardInfo({ records }: { records: Record[] }) {
           <th><span>min load</span></th>
           <th><span>max load</span></th>
           <th><span>avg load</span></th>
-          <th><span>peek load</span></th>
+          <th><span>p95 load</span></th>
         </tr>
       </thead>
       <tbody>
