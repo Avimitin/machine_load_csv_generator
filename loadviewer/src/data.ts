@@ -30,8 +30,33 @@ export async function getLoadsByMachName(mname: string) {
   // TODO: Remember to add a form to select date
   const csvdata = await fetch(files[0].download_url).then((resp) => resp.text());
 
-  const record = parseCSV(csvdata);
-  return record;
+  const records = parseCSV(csvdata);
+  if (records.length === 0) {
+    throw new Error(`No record found for ${mname}`);
+  }
+
+  if (records.length === 1) {
+    return records;
+  }
+
+  const result = [];
+
+  let i = 0, j = 0;
+  while (j < records.length) {
+    if (records[i].ttime.getDate() !== records[j].ttime.getDate()) {
+      const s = records.slice(i, j);
+      const sorted = s.sort((a, b) => a.load - b.load);
+      const idx = Math.round(sorted.length * 0.95) - 1;
+      const pick = sorted[idx];
+      result.push(pick);
+
+      i = j;
+    }
+
+    j += 1;
+  }
+
+  return result;
 }
 
 export async function ghCntFetcher<T>(path: string) {
