@@ -44,8 +44,8 @@ export async function getLoadsByMachName(mname: string) {
   let i = 0, j = 0;
   while (j < records.length) {
     if (records[i].ttime.getDate() !== records[j].ttime.getDate()) {
-      const s = records.slice(i, j);
-      const sorted = s.sort((a, b) => a.load - b.load);
+      // calculate 95th percentile
+      const sorted = records.slice(i, j).sort((a, b) => a.load - b.load);
       const idx = Math.round(sorted.length * 0.95) - 1;
       const pick = sorted[idx];
       result.push(pick);
