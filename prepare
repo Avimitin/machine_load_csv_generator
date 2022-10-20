@@ -1,0 +1,56 @@
+#!/usr/bin/ruby
+
+# frozen_string_literal: true
+
+require 'sqlite3'
+require 'json'
+require 'dotenv/load'
+require 'pathname'
+
+DATA_PATH = Pathname.new(ENV['DATA_PATH'])
+DB_FILENAME = ENV['DB_FILENAME']
+
+Machine = Struct.new('Machine', :id, :name, :addr, :team)
+
+def init_machine_db(db, mach)
+  db.execute <<~SQL
+    CREATE TABLE IF NOT EXISTS machine (
+      id   INTEGER PRIMARY KEY,
+      name TEXT,
+      addr TEXT,
+      team TEXT,
+      UNIQUE(name)
+    );
+  SQL
+
+  mach.each do |m|
+    db.execute('INSERT OR IGNORE INTO machine (id, name, addr, team) VALUES (?, ?, ?, ?)', m.id, m.name, m.addr, m.team)
+  end
+end
+
+def init_record_db(db)
+  db.execute <<~SQL
+    CREATE TABLE IF NOT EXISTS record (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      ttime     INTEGER,
+      machine   INT,
+      users     INT,
+      load      REAL,
+      FOREIGN   KEY(machine) REFERENCES machine(id)
+    );
+  SQL
+end
+
+db = SQLite3::Database.open(DATA_PATH.join(DB_FILENAME))
+data = JSON.parse(File.read(DATA_PATH.join('machMap.json')))
+machines = data['machines']
+machines = machines.map do |mach|
+  Machine.new(mach['id'], mach['name'], mach['addr'], mach['team'])
+end
+puts 'Initializing machine db [1/2]'
+init_machine_db(db, machines)
+
+puts 'Initializing record db [2/2]'
+init_record_db(db)
+
+puts 'All job done'
