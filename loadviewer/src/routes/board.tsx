@@ -76,7 +76,7 @@ function BoardInfo({ records }: { records: Record[] }) {
           <th><span>Min CPU Usage</span></th>
           <th><span>Max CPU Usage</span></th>
           <th><span>Avg CPU Usage</span></th>
-          <th><span>P96 CPU Usage</span></th>
+          <th><span>P95 CPU Usage</span></th>
         </tr>
       </thead>
       <tbody>
