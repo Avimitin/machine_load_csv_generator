@@ -69,10 +69,10 @@ function BoardInfo({ records }: { records: Record[] }) {
     <table>
       <thead>
         <tr>
-          <th><span>min load</span></th>
-          <th><span>max load</span></th>
-          <th><span>avg load</span></th>
-          <th><span>p95 load</span></th>
+          <th><span>Min CPU Usage</span></th>
+          <th><span>Max CPU Usage</span></th>
+          <th><span>Avg CPU Usage</span></th>
+          <th><span>P96 CPU Usage</span></th>
         </tr>
       </thead>
       <tbody>
