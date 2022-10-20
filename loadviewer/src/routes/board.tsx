@@ -95,7 +95,10 @@ export default function Board() {
   const { id } = useLoaderData() as { id: string };
   const { data, error } = useSWR(id, getLoadsByMachName);
   if (error) {
-    throw new Error(`Fail to fetch machines data ${error}`);
+    return (<div id="zero-state">
+      <h2>No CPU Usage was found</h2>
+      <p>This machine is not online yet.</p>
+    </div>)
   }
 
   if (!data) {
