@@ -36,6 +36,8 @@ const options = {
       type: 'linear' as const,
       display: true,
       position: 'left' as const,
+      max: 200,
+      min: 0,
     },
     users: {
       type: 'linear' as const,
@@ -43,7 +45,9 @@ const options = {
       position: 'right' as const,
       grid: {
         drawOnChartArea: false,
-      }
+      },
+      max: 20,
+      min: 0,
     }
   }
 }
@@ -104,6 +108,7 @@ export default function Board() {
     data: data.map(rec => rec.users),
     borderColor: 'rgb(53, 162, 235)',
     backgroundColor: 'rgba(53, 162, 235, 0.5)',
+    tension: 0.4,
     yAxisID: 'users',
   };
   const loads = {
@@ -113,6 +118,7 @@ export default function Board() {
     borderColor: 'rgb(115,238,163)',
     backgroundColor: 'rgba(115,238,163,0.7)',
     yAxisID: 'load',
+    tension: 0.4,
   };
 
   return (<div>
