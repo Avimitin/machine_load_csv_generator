@@ -5,7 +5,7 @@ import './index.css'
 import Root, { loader as rootLoader } from "./routes/root";
 import ErrorPage from './error';
 import Board, { loader as boardLoader, ErrorPage as BoardErrorPage } from './routes/board';
-import Index from './routes';
+import Index, { ErrorPage as IndexErrorPage } from './routes';
 
 const router = createBrowserRouter([
   {
@@ -20,7 +20,7 @@ const router = createBrowserRouter([
         loader: boardLoader,
         errorElement: <BoardErrorPage />,
       },
-      { index: true, element: <Index /> },
+      { index: true, element: <Index />, errorElement: <IndexErrorPage /> },
     ]
   },
 ]);
