@@ -33,8 +33,17 @@ function percentile<T>(a: T[], sf?: (a: T, b: T) => number): T {
 
 export async function getLoadsByMachName(mname: string) {
   const files: GitHubContent[] = await ghCntFetcher(mname);
+  if (files.length === 0) {
+    throw new Error("no csv data found");
+  }
+
   // TODO: Remember to add a form to select date
-  const csvdata = await fetch(files[0].download_url).then((resp) => resp.text());
+  const csvdata = await fetch(files[0].download_url)
+    .then((resp) => resp.text())
+    .catch(err => {
+      console.error(err);
+      throw new Error("fail to fetch csv data")
+    });
 
   const records = parseCSV(csvdata);
   if (records.length === 0) {
