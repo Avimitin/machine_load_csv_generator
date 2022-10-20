@@ -52,15 +52,3 @@ export interface MachineAliasInfo {
   alias: string,
   belong: string,
 }
-
-export async function getAllMachineAlias() {
-  const files: GitHubContent = await ghCntFetcher("all.csv");
-  const csv = await fetch(files.download_url).then(res => res.text());
-  const row = csv.split("\n").slice(0, -1);
-  const info = row.map(line => {
-    const cell = line.split(",");
-    return { alias: cell[0], belong: cell[1] };
-  });
-
-  return info;
-}

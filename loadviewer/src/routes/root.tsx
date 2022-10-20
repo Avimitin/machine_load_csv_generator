@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { NavLink, Form, useLoaderData, useNavigation, useSubmit } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { getAllMachineAlias, ghCntFetcher, GitHubContent, MachineAliasInfo } from "../data";
+import { ghCntFetcher, GitHubContent } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -22,12 +22,6 @@ type GhFileResp = {
   error: any,
 }
 
-type MachineAliasResp = {
-  data?: MachineAliasInfo[],
-  isLoading: boolean,
-  error: any,
-}
-
 function Nav({ to, content }: { to: string, content: string }) {
   return (
     <NavLink
@@ -41,7 +35,7 @@ function Nav({ to, content }: { to: string, content: string }) {
   );
 }
 
-function NavBar({ ghfile, mar }: { ghfile: GhFileResp, mar: MachineAliasResp }) {
+function NavBar({ ghfile }: { ghfile: GhFileResp }) {
   if (ghfile.isLoading) {
     return (<nav><div><h4>Loading...</h4></div></nav>)
   }
@@ -49,22 +43,11 @@ function NavBar({ ghfile, mar }: { ghfile: GhFileResp, mar: MachineAliasResp }) 
     return (<nav><p><i>No board</i></p></nav>)
   }
 
-  const belong = ((machine: GitHubContent) => {
-    if (mar.isLoading) {
-      return "";
-    }
-    const a = mar.data?.find(a => a.alias === machine.path);
-    if (!a) {
-      return "";
-    }
-    return `(${a.belong})`;
-  });
-
   const data = ghfile.data.filter(f => f.type === "dir");
 
   const list = data.map(machine => (
     <li key={machine.path}>
-      <Nav to={machine.path} content={`${machine.path}${belong(machine)}`} />
+      <Nav to={machine.path} content={machine.path} />
     </li>
   ));
 
@@ -82,7 +65,6 @@ export default function Root() {
   const navigation = useNavigation();
   const submit = useSubmit();
   let { data, error } = useSWR<GitHubContent[]>("/", ghCntFetcher);
-  const { data: alias, error: aliasErr } = useSWR("getAllMachinesAlias", getAllMachineAlias);
   if (error) {
     throw new Error(`Fail to fetch machines data ${error}`);
   }
@@ -134,11 +116,6 @@ export default function Root() {
             data: data,
             isLoading: !error && !data,
             error: error,
-          }}
-          mar={{
-            data: alias,
-            isLoading: !aliasErr && !alias,
-            error: aliasErr,
           }}
         />
       </div>
