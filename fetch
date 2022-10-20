@@ -6,7 +6,6 @@ require 'time'
 require 'dotenv/load'
 require 'sqlite3'
 require 'pathname'
-require 'json'
 require 'English'
 
 #
@@ -14,7 +13,7 @@ require 'English'
 #
 
 DATA_PATH = Pathname.new(ENV['DATA_PATH'])
-DB_FILENAME = DATA_PATH + ENV['MACHINE_LOAD_DB']
+DB_FILENAME = DATA_PATH.join(ENV['DB_FILENAME'])
 PRIVATE_KEY = ENV['SSH_PRIVATE_KEY']
 LOGIN_USER = ENV['SSH_LOGIN_USER']
 
@@ -22,6 +21,7 @@ LOGIN_USER = ENV['SSH_LOGIN_USER']
 # Types and Functions
 #
 
+Machine = Struct.new('Machine', :id, :addr)
 LoadData = Struct.new(:users, :load)
 
 def ssh(machine)
@@ -33,31 +33,6 @@ def ssh(machine)
     "ssh #{LOGIN_USER}@#{machine}"
   else
     "ssh #{machine}"
-  end
-end
-
-def init(db, machines)
-  db.execute <<~SQL
-    CREATE TABLE IF NOT EXISTS machine (
-      id   INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      UNIQUE(name)
-    );
-  SQL
-
-  db.execute <<~SQL
-    CREATE TABLE IF NOT EXISTS record (
-      id        INTEGER PRIMARY KEY AUTOINCREMENT,
-      ttime     INTEGER,
-      machine   INT,
-      users     INT,
-      load      REAL,
-      FOREIGN   KEY(machine) REFERENCES machine(id)
-    );
-  SQL
-
-  machines.each do |m|
-    db.execute('INSERT OR IGNORE INTO machine (name) VALUES (?)', m)
   end
 end
 
@@ -80,20 +55,21 @@ def get_load(machine)
   LoadData.new(result['user'], result['load'])
 end
 
+def get_machines(db)
+  db.execute('SELECT id, addr FROM machine').collect { |row| Machine.new(row[0], row[1]) }
+end
+
 #
 # Main logic
 #
 
-db = SQLite3::Database.open DB_FILENAME
-machines = File.read(DATA_PATH.join('alias.csv'))
-init(db, MACHINE_ADDR)
+db = SQLite3::Database.open(DB_FILENAME)
+machines = get_machines(db)
 
-idx = 1
-MACHINE_ADDR.each do |addr|
+machines.each do |mach|
   current_timestamp = Time.now.to_i
-  record = get_load(addr)
-  insert_new_record(db, idx, record, current_timestamp)
-  idx += 1
+  record = get_load(mach.addr)
+  insert_new_record(db, mach.id, record, current_timestamp)
 end
 
-puts "#{idx - 1} machines tested"
+puts "#{machines.length} machines tested"
