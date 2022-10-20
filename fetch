@@ -1,19 +1,22 @@
 #!/usr/bin/ruby
 
-require "time"
-require "dotenv/load"
-require "sqlite3"
-require "pathname"
+# frozen_string_literal: true
+
+require 'time'
+require 'dotenv/load'
+require 'sqlite3'
+require 'pathname'
+require 'json'
+require 'English'
 
 #
 # Configuration
 #
 
-DATA_PATH = Pathname.new(ENV["DATA_PATH"])
-DB_FILENAME = DATA_PATH + ENV["MACHINE_LOAD_DB"]
-MACHINE_ADDR = ENV["MACHINE_ADDR"].split(",")
-PRIVATE_KEY = ENV["SSH_PRIVATE_KEY"]
-LOGIN_USER = ENV["SSH_LOGIN_USER"]
+DATA_PATH = Pathname.new(ENV['DATA_PATH'])
+DB_FILENAME = DATA_PATH + ENV['MACHINE_LOAD_DB']
+PRIVATE_KEY = ENV['SSH_PRIVATE_KEY']
+LOGIN_USER = ENV['SSH_LOGIN_USER']
 
 #
 # Types and Functions
@@ -22,58 +25,59 @@ LOGIN_USER = ENV["SSH_LOGIN_USER"]
 LoadData = Struct.new(:users, :load)
 
 def ssh(machine)
-  if PRIVATE_KEY and LOGIN_USER
-    return "ssh -i #{PRIVATE_KEY} #{LOGIN_USER}@#{machine}"
+  if PRIVATE_KEY && LOGIN_USER
+    "ssh -i #{PRIVATE_KEY} #{LOGIN_USER}@#{machine}"
   elsif PRIVATE_KEY
-    return "ssh -i #{PRIVATE_KEY} #{machine}"
+    "ssh -i #{PRIVATE_KEY} #{machine}"
   elsif LOGIN_USER
-    return "ssh #{LOGIN_USER}@#{machine}"
+    "ssh #{LOGIN_USER}@#{machine}"
   else
-    return "ssh #{machine}"
+    "ssh #{machine}"
   end
 end
 
 def init(db, machines)
-  db.execute <<-SQL
-CREATE TABLE IF NOT EXISTS machine (
-  id   INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  UNIQUE(name)
-);
+  db.execute <<~SQL
+    CREATE TABLE IF NOT EXISTS machine (
+      id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      UNIQUE(name)
+    );
   SQL
 
-  db.execute <<-SQL
-CREATE TABLE IF NOT EXISTS record (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  ttime     INTEGER,
-  machine   INT,
-  users     INT,
-  load      REAL,
-  FOREIGN   KEY(machine) REFERENCES machine(id)
-);
+  db.execute <<~SQL
+    CREATE TABLE IF NOT EXISTS record (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      ttime     INTEGER,
+      machine   INT,
+      users     INT,
+      load      REAL,
+      FOREIGN   KEY(machine) REFERENCES machine(id)
+    );
   SQL
 
   machines.each do |m|
-    db.execute("INSERT OR IGNORE INTO machine (name) VALUES (?)", m)
+    db.execute('INSERT OR IGNORE INTO machine (name) VALUES (?)', m)
   end
 end
 
 def insert_new_record(db, machine_id, record, test_time)
   db.execute(
-    "INSERT INTO record (ttime, machine, users, load) VALUES (?, ?, ?, ?)",
+    'INSERT INTO record (ttime, machine, users, load) VALUES (?, ?, ?, ?)',
     [test_time, machine_id, record.users, record.load]
   )
 end
 
 def get_load(machine)
   respond = `#{ssh(machine)} uptime`
-  return LoadData.new(0, 0) if $?.to_i != 0
+  return LoadData.new(0, 0) if $CHILD_STATUS.to_i != 0
+
   result =
-    /(?<user>\d+) users,\s+load average: [\d\.]+, (?<load>[\d\.]+)/.match(
+    /(?<user>\d+) users,\s+load average: [\d.]+, (?<load>[\d.]+)/.match(
       respond
     )
-  data = LoadData.new(result["user"], result["load"])
-  return data
+
+  LoadData.new(result['user'], result['load'])
 end
 
 #
@@ -81,6 +85,7 @@ end
 #
 
 db = SQLite3::Database.open DB_FILENAME
+machines = File.read(DATA_PATH.join('alias.csv'))
 init(db, MACHINE_ADDR)
 
 idx = 1
