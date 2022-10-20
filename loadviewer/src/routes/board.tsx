@@ -36,7 +36,7 @@ const options = {
       type: 'linear' as const,
       display: true,
       position: 'left' as const,
-      max: 200,
+      max: 400,
       min: 0,
     },
     users: {
