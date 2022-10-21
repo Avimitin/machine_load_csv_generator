@@ -46,12 +46,16 @@ function NavBar({ nbdata }: { nbdata: NavBarData }) {
 
   const dirs = nbdata.dirs.filter(f => f.type === "dir");
 
+  // sort the navbar list by search params
   if (nbdata.search) {
     const filtered = matchSorter(nbdata.machMaps, nbdata.search, { keys: ["name"] });
     nbdata.machMaps = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
   }
 
-  const display = nbdata.machMaps.map(mach => {
+  type DisplayAble = { link: string | null, content: string };
+
+  // convert navbar data to display data
+  const display: DisplayAble[] = nbdata.machMaps.map(mach => {
     const wanted = dirs.find(d => d.path.search(mach.name) !== -1);
     const content = `${mach.name} (${mach.team})`;
     return {
@@ -60,23 +64,32 @@ function NavBar({ nbdata }: { nbdata: NavBarData }) {
     }
   })
 
-  const navlist = display
-  .sort((a, b) => a.link && !b.link ? -1 : 1)
-  .map(machine =>
-    machine.link ?
-      (<li key={machine.content}>
-        <Nav to={machine.link} content={machine.content} />
-      </li>)
-      :
-      (<li key={machine.content} id="non-exist-machine">
+  const active: DisplayAble[] = [];
+  const inactive: DisplayAble[] = [];
+  display.forEach(dp => dp.link ? active.push(dp) : inactive.push(dp));
+  const alphabeticSort = (a: DisplayAble, b: DisplayAble) => a.content < b.content ? -1 : 1;
+
+  const activeNavList = active
+    .sort(alphabeticSort)
+    .map(machine => (
+      <li key={machine.content}>
+        <Nav to={machine.link as string} content={machine.content} />
+      </li>
+    ));
+
+  const inactiveNavList = inactive
+    .sort(alphabeticSort)
+    .map(machine => (
+      <li key={machine.content} id="non-exist-machine" >
         <span>{machine.content}</span>
-      </li>)
-  );
+      </li >
+    ));
 
   return (
     <nav>
       <ul>
-        {navlist}
+        {activeNavList}
+        {inactiveNavList}
       </ul>
     </nav>
   );
