@@ -28,7 +28,7 @@ const options = {
     },
     title: {
       display: true,
-      text: "CPU Usage & Loggined Users",
+      text: "CPU Usage & Loggedin Users",
     }
   },
   scales: {
@@ -107,7 +107,7 @@ export default function Board() {
 
   const labels = data.map(rec => rec.ttime.getDate());
   const users = {
-    label: "Loggined Users",
+    label: "Loggedin Users",
     data: data.map(rec => rec.users),
     borderColor: 'rgb(53, 162, 235)',
     backgroundColor: 'rgba(53, 162, 235, 0.5)',
