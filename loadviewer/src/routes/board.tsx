@@ -1,6 +1,6 @@
 import { isRouteErrorResponse, LoaderFunctionArgs, useLoaderData, useRouteError } from "react-router-dom"
 import { getLoadsByMachName, Record } from "../data";
-import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } from "chart.js";
+import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, ScriptableLineSegmentContext, Segment, Title, Tooltip } from "chart.js";
 import { Line } from 'react-chartjs-2';
 import useSWR from "swr";
 
@@ -105,6 +105,10 @@ export default function Board() {
     return (<div id="zero-state"><h2>Loading...</h2></div>)
   }
 
+  const highlightLowUsage = (ctx: ScriptableLineSegmentContext) => {
+    return ctx.p0.parsed.y < 10 || ctx.p1.parsed.y < 10 ? "rgba(192,75,75,0.5)" : undefined;
+  }
+
   const labels = data.map(rec => rec.ttime.getDate());
   const users = {
     label: "Loggedin Users",
@@ -122,6 +126,10 @@ export default function Board() {
     backgroundColor: 'rgba(115,238,163,0.7)',
     yAxisID: 'load',
     tension: 0.4,
+    segment: {
+      borderColor: (ctx: ScriptableLineSegmentContext) => highlightLowUsage(ctx),
+      backgroundColor: (ctx: ScriptableLineSegmentContext) => highlightLowUsage(ctx),
+    }
   };
 
   return (<div>
