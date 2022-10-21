@@ -8,6 +8,8 @@ export default function Index() {
         The Web viewer for our unmatched boards.
         <br/>
         Click the left navbar to view details of our board.
+        <br/>
+        Gray (unselectable) machine means that this machine is offline.
       </p>
     </div>
   );
