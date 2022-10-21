@@ -75,6 +75,22 @@ export async function getLoadsByMachName(mname: string) {
   return result;
 }
 
+export interface MachMap {
+  name: string,
+  team: string,
+}
+
+export async function getMachines(): Promise<MachMap[]> {
+  const files: GitHubContent[] = (await ghCntFetcher("/") as GitHubContent[])
+    .filter(cnt => cnt.type === "file")
+    .filter(f => f.path === "machMap.json");
+  if (files.length === 0) {
+    throw new Error("Fail to find file list");
+  }
+  return JSON.parse(await fetch(files[0].download_url)
+    .then(res => res.text()));
+}
+
 export async function ghCntFetcher<T>(path: string) {
   const base = "https://api.github.com/repos/Avimitin/unmatched-load-data/contents/";
   const api = path === "/" ? new URL(base) : new URL(path, base);

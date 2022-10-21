@@ -1,9 +1,9 @@
 import { matchSorter } from "match-sorter";
 import { useEffect } from "react";
-import { NavLink, Form, useLoaderData, useNavigation, useSubmit } from "react-router-dom";
+import { NavLink, Form, useLoaderData, useNavigation, useSubmit, SubmitFunction } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { ghCntFetcher, GitHubContent } from "../data";
+import { getMachines, ghCntFetcher, GitHubContent, MachMap } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -22,6 +22,12 @@ type GhFileResp = {
   error: any,
 }
 
+interface NavBarData {
+  dirs?: GitHubContent[],
+  machMaps?: MachMap[],
+  isLoading: boolean,
+}
+
 function Nav({ to, content }: { to: string, content: string }) {
   return (
     <NavLink
@@ -35,26 +41,42 @@ function Nav({ to, content }: { to: string, content: string }) {
   );
 }
 
-function NavBar({ ghfile }: { ghfile: GhFileResp }) {
-  if (ghfile.isLoading) {
+function NavBar({ nbdata }: { nbdata: NavBarData }) {
+  if (nbdata.isLoading) {
     return (<nav><div><h4>Loading...</h4></div></nav>)
   }
-  if (!ghfile.data || ghfile.data?.length == 0) {
+  if (!nbdata.machMaps || nbdata.machMaps.length === 0 || !nbdata.dirs || nbdata.dirs.length === 0) {
     return (<nav><p><i>No board</i></p></nav>)
   }
 
-  const data = ghfile.data.filter(f => f.type === "dir");
+  const dirs = nbdata.dirs.filter(f => f.type === "dir");
 
-  const list = data.map(machine => (
-    <li key={machine.path}>
-      <Nav to={machine.path} content={machine.path} />
-    </li>
-  ));
+  const display = nbdata.machMaps.map(mach => {
+    const wanted = dirs.find(d => d.path.search(mach.name) !== -1);
+    const content = `${mach.name} (${mach.team})`;
+    return {
+      link: wanted !== undefined ? wanted.path : null,
+      content: content,
+    }
+  })
+
+  const navlist = display
+  .sort((a, b) => a.link && !b.link ? -1 : 1)
+  .map(machine =>
+    machine.link ?
+      (<li key={machine.content}>
+        <Nav to={machine.link} content={machine.content} />
+      </li>)
+      :
+      (<li key={machine.content} id="non-exist-machine">
+        <span>{machine.content}</span>
+      </li>)
+  );
 
   return (
     <nav>
       <ul>
-        {list}
+        {navlist}
       </ul>
     </nav>
   );
@@ -96,14 +118,15 @@ export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  let { data, error } = useSWR<GitHubContent[]>("/", ghCntFetcher);
-  if (error) {
-    throw new Error(`Fail to fetch machines data ${error}`);
+  let { data: extMachines, error: extMachErr } = useSWR("ExhaustedMachineList", getMachines);
+  let { data: dirs, error: dirsError } = useSWR<GitHubContent[]>("/", ghCntFetcher);
+  if (dirsError || extMachErr) {
+    throw new Error(`Fail to fetch machines data ${dirsError || extMachErr}`);
   }
 
-  if (q && data) {
-    const filtered = matchSorter(data, q, { keys: ["path"] });
-    data = filtered.sort((a, b) => a.path < b.path ? 1 : 0);
+  if (q && dirs) {
+    const filtered = matchSorter(dirs, q, { keys: ["path"] });
+    dirs = filtered.sort((a, b) => a.path < b.path ? 1 : 0);
   }
 
   const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q");
@@ -119,10 +142,10 @@ export default function Root() {
         <h1>Unmatched Status</h1>
         <SearchForm q={q} searching={searching} submit={submit} />
         <NavBar
-          ghfile={{
-            data: data,
-            isLoading: !error && !data,
-            error: error,
+          nbdata={{
+            dirs: dirs,
+            machMaps: extMachines,
+            isLoading: !dirsError && !dirs && !extMachines && !extMachErr,
           }}
         />
       </div>

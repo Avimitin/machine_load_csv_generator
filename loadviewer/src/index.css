@@ -214,6 +214,22 @@ i {
   color: hsl(224, 98%, 58%);
 }
 
+#sidebar #non-exist-machine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+
+  white-space: pre;
+  padding: 0.5rem;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  gap: 1rem;
+
+  color: #808080;
+}
+
 #detail {
   flex: 1;
   padding: 2rem 4rem;
