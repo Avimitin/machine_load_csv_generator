@@ -20,6 +20,7 @@ interface NavBarData {
   dirs?: GitHubContent[],
   machMaps?: MachMap[],
   isLoading: boolean,
+  search?: string,
 }
 
 function Nav({ to, content }: { to: string, content: string }) {
@@ -44,6 +45,11 @@ function NavBar({ nbdata }: { nbdata: NavBarData }) {
   }
 
   const dirs = nbdata.dirs.filter(f => f.type === "dir");
+
+  if (nbdata.search) {
+    const filtered = matchSorter(nbdata.machMaps, nbdata.search, { keys: ["name"] });
+    nbdata.machMaps = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
+  }
 
   const display = nbdata.machMaps.map(mach => {
     const wanted = dirs.find(d => d.path.search(mach.name) !== -1);
@@ -118,11 +124,6 @@ export default function Root() {
     throw new Error(`Fail to fetch machines data ${dirsError || extMachErr}`);
   }
 
-  if (q && dirs) {
-    const filtered = matchSorter(dirs, q, { keys: ["path"] });
-    dirs = filtered.sort((a, b) => a.path < b.path ? 1 : 0);
-  }
-
   const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q");
 
   useEffect(() => {
@@ -140,6 +141,7 @@ export default function Root() {
             dirs: dirs,
             machMaps: extMachines,
             isLoading: !dirsError && !dirs && !extMachines && !extMachErr,
+            search: q,
           }}
         />
       </div>
