@@ -16,12 +16,6 @@ interface data {
   q: string,
 }
 
-type GhFileResp = {
-  data?: GitHubContent[],
-  isLoading: boolean,
-  error: any,
-}
-
 interface NavBarData {
   dirs?: GitHubContent[],
   machMaps?: MachMap[],
