@@ -1,8 +1,10 @@
 import { isRouteErrorResponse, LoaderFunctionArgs, useLoaderData, useRouteError } from "react-router-dom"
-import { getLoadsByMachName, Record } from "../data";
-import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, ScriptableLineSegmentContext, Segment, Title, Tooltip } from "chart.js";
+import { getLoadsByNameAndDate, Record } from "../data";
+import { CategoryScale, Chart as ChartJS, Filler, Legend, LinearScale, LineElement, PointElement, ScriptableLineSegmentContext, Title, Tooltip } from "chart.js";
 import { Line } from 'react-chartjs-2';
 import useSWR from "swr";
+import { useState } from "react";
+import Select, { ActionMeta } from "react-select";
 
 ChartJS.register(
   CategoryScale,
@@ -60,6 +62,29 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { id: params.id };
 }
 
+interface DateMenuOption {
+  value: string,
+  label: string,
+}
+
+interface DateMenuProps {
+  options: DateMenuOption[],
+  onChange: (op: DateMenuOption | null) => void,
+
+}
+
+function DateMenu({ options, onChange }: DateMenuProps) {
+  return (
+    <div className="date-menu">
+      <Select
+        defaultValue={options[0]}
+        onChange={onChange}
+        options={options}
+      />
+    </div>
+  )
+}
+
 function BoardInfo({ records }: { records: Record[] }) {
   const load = records.map(rec => rec.load);
   const minLoad = Math.min(...load);
@@ -93,7 +118,13 @@ function BoardInfo({ records }: { records: Record[] }) {
 
 export default function Board() {
   const { id } = useLoaderData() as { id: string };
-  const { data, error } = useSWR(id, getLoadsByMachName);
+  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
+  const { data, error } = useSWR([id, selectedDate], getLoadsByNameAndDate);
+
+  const onChange = (option: DateMenuOption | null) => {
+    setSelectedDate(option);
+  };
+
   if (error) {
     return (<div id="zero-state">
       <h2>No CPU Usage was found</h2>
@@ -105,14 +136,17 @@ export default function Board() {
     return (<div id="zero-state"><h2>Loading...</h2></div>)
   }
 
+  const { recordResult, dateList } = data;
+  const dateOptions = dateList.map(d => { return { value: d, label: d } });
+
   const highlightLowUsage = (ctx: ScriptableLineSegmentContext) => {
     return ctx.p0.parsed.y < 10 || ctx.p1.parsed.y < 10 ? "rgba(192,75,75,0.5)" : undefined;
   }
 
-  const labels = data.map(rec => rec.ttime.getDate());
+  const labels = recordResult.map(rec => rec.ttime.getDate());
   const users = {
     label: "Loggedin Users",
-    data: data.map(rec => rec.users),
+    data: recordResult.map(rec => rec.users),
     borderColor: 'rgb(53, 162, 235)',
     backgroundColor: 'rgba(53, 162, 235, 0.5)',
     tension: 0.4,
@@ -121,7 +155,7 @@ export default function Board() {
   const loads = {
     label: "Machine CPU Usage",
     fill: true,
-    data: data.map(rec => rec.load),
+    data: recordResult.map(rec => rec.load),
     borderColor: 'rgb(115,238,163)',
     backgroundColor: 'rgba(115,238,163,0.7)',
     yAxisID: 'load',
@@ -133,9 +167,9 @@ export default function Board() {
   };
 
   return (<div>
-    <h3>Board: {id}</h3>
+    <DateMenu options={dateOptions} onChange={onChange} />
     <Line options={options} data={{ labels, datasets: [users, loads] }} />
-    <BoardInfo records={data} />
+    <BoardInfo records={recordResult} />
   </div>);
 }
 

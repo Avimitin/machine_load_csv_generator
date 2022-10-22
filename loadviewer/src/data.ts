@@ -31,14 +31,26 @@ function percentile<T>(a: T[], sf?: (a: T, b: T) => number): T {
   return sorted[idx];
 }
 
-export async function getLoadsByMachName(mname: string) {
+export async function getLoadsByNameAndDate(mname: string, date?: string) {
   const files: GitHubContent[] = await ghCntFetcher(mname);
   if (files.length === 0) {
     throw new Error("no csv data found");
   }
 
-  // TODO: Remember to add a form to select date
-  const csvdata = await fetch(files[0].download_url)
+  // try to select file by date, or just return the first element
+  const selected = date ? files.find(f => f.type === "file" && f.path.search(date) !== -1) : files[0];
+  if (!selected) throw new Error("no load data found for this date");
+
+  // return list of date options
+  const dateList = files.map(f => {
+    const matches = f.path.match(/(?<date>\d{4}-\d{1,2})/);
+    if (!matches || !matches.groups) {
+      throw new Error("Fail to get date [Regex Failure]");
+    }
+    return matches.groups["date"];
+  });
+
+  const csvdata = await fetch(selected.download_url)
     .then((resp) => resp.text())
     .catch(err => {
       console.error(err);
@@ -51,16 +63,16 @@ export async function getLoadsByMachName(mname: string) {
   }
 
   if (records.length === 1) {
-    return records;
+    return { recordResult: records, dateList };
   }
 
-  const result = [];
+  const recordResult = [];
 
   let i = 0, j = 0;
   while (j < records.length) {
     if (records[i].ttime.getDate() !== records[j].ttime.getDate()) {
       // calculate 95th percentile
-      result.push(percentile(records.slice(i, j), (a, b) => a.load - b.load));
+      recordResult.push(percentile(records.slice(i, j), (a, b) => a.load - b.load));
 
       i = j;
     }
@@ -69,10 +81,10 @@ export async function getLoadsByMachName(mname: string) {
   }
 
   if (i == 0) {
-    result.push(percentile(records, (a, b) => a.load - b.load));
+    recordResult.push(percentile(records, (a, b) => a.load - b.load));
   }
 
-  return result;
+  return { recordResult, dateList };
 }
 
 export interface MachMap {
@@ -99,8 +111,14 @@ export async function ghCntFetcher<T>(path: string) {
     method: "GET",
     headers: { "Accept": "application/vnd.github+json" }
   })
-    .then(resp => resp.json())
-    .catch(err => { console.log(err); throw new Error("Fail to fetch machines") });
+    .then(resp => {
+      if (resp.status === 403) {
+        throw new Error("Your IP has been rate limited by GitHub");
+      } else {
+        return resp.json()
+      }
+    })
+    .catch(err => { console.error(err); throw err });
 
   return files;
 }
