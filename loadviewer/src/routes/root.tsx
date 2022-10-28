@@ -1,9 +1,15 @@
 import { matchSorter } from "match-sorter";
 import { useEffect } from "react";
-import { NavLink, Form, useLoaderData, useNavigation, useSubmit, SubmitFunction } from "react-router-dom";
+import {
+  NavLink,
+  Form,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+  SubmitFunction,
+} from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import useSWR from "swr";
-import { getMachines, ghCntFetcher, GitHubContent, MachMap } from "../data";
+import { Location, MachMap, useGitHub } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -12,18 +18,14 @@ export async function loader({ request }: any) {
 }
 
 interface data {
-  boards: GitHubContent[],
-  q: string,
+  q: string;
 }
 
 interface NavBarData {
-  dirs?: GitHubContent[],
-  machMaps?: MachMap[],
-  isLoading: boolean,
-  search?: string,
+  search?: string;
 }
 
-function Nav({ to, content }: { to: string, content: string }) {
+function Nav({ to, content }: { to: string; content: string }) {
   return (
     <NavLink
       to={`board/${to}`}
@@ -36,54 +38,95 @@ function Nav({ to, content }: { to: string, content: string }) {
   );
 }
 
-function NavBar({ nbdata }: { nbdata: NavBarData }) {
-  if (nbdata.isLoading) {
-    return (<nav><div><h4>Loading...</h4></div></nav>)
-  }
-  if (!nbdata.machMaps || nbdata.machMaps.length === 0 || !nbdata.dirs || nbdata.dirs.length === 0) {
-    return (<nav><p><i>No board</i></p></nav>)
-  }
-
-  const dirs = nbdata.dirs.filter(f => f.type === "dir");
-
-  // sort the navbar list by search params
-  if (nbdata.search) {
-    const filtered = matchSorter(nbdata.machMaps, nbdata.search, { keys: ["name"] });
-    nbdata.machMaps = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
+function NavBar({ barData }: { barData: NavBarData }) {
+  let machMap = useGitHub<MachMap[]>({ file: "machMap.json" });
+  const location = useGitHub<Location>({ file: "location.json" });
+  if (location.isLoading || machMap.isLoading) {
+    return (
+      <nav>
+        <div>
+          <h4>Loading...</h4>
+        </div>
+      </nav>
+    );
   }
 
-  type DisplayAble = { link: string | null, content: string };
+  if (machMap.error || machMap.error) {
+    console.error(machMap.error || machMap.error);
+    return (
+      <nav>
+        <p>
+          <i>Fail to load</i>
+        </p>
+      </nav>
+    );
+  }
 
-  // convert navbar data to display data
-  const display: DisplayAble[] = nbdata.machMaps.map(mach => {
-    const wanted = dirs.find(d => d.path.search(mach.name) !== -1);
-    const content = `${mach.name} (${mach.team})`;
-    return {
-      link: wanted !== undefined ? wanted.path : null,
-      content: content,
-    }
-  })
+  if (!machMap.data) {
+    return (
+      <nav>
+        <p>
+          <i>No board</i>
+        </p>
+      </nav>
+    );
+  }
 
+  const locData = location.data;
+  if (!locData) {
+    return (
+      <nav>
+        <p>
+          <i>No test results</i>
+        </p>
+      </nav>
+    );
+  }
+
+  type DisplayAble = { link: string | null; content: string };
   const active: DisplayAble[] = [];
   const inactive: DisplayAble[] = [];
-  display.forEach(dp => dp.link ? active.push(dp) : inactive.push(dp));
-  const alphabeticSort = (a: DisplayAble, b: DisplayAble) => a.content < b.content ? -1 : 1;
 
-  const activeNavList = active
+  // convert navbar data to display data
+  machMap.data.forEach((mach) => {
+    const content = `${mach.name} (${mach.team})`;
+    const data = locData[mach.name];
+    data
+      ? active.push({ link: data.path, content: content })
+      : inactive.push({ link: null, content: content });
+  });
+
+  // sort the navbar list by search params
+  let sortedDisplayAble: DisplayAble[] | null = null;
+  if (barData.search) {
+    const filtered = matchSorter(active, barData.search, {
+      keys: ["content"],
+    });
+    sortedDisplayAble = filtered.sort((a, b) =>
+      a.content > b.content ? 1 : -1
+    );
+  }
+
+  const alphabeticSort = (a: DisplayAble, b: DisplayAble) =>
+    a.content < b.content ? -1 : 1;
+
+  const activeNavList = (sortedDisplayAble ? sortedDisplayAble : active)
     .sort(alphabeticSort)
-    .map(machine => (
+    .map((machine) => (
       <li key={machine.content}>
         <Nav to={machine.link as string} content={machine.content} />
       </li>
     ));
 
-  const inactiveNavList = inactive
-    .sort(alphabeticSort)
-    .map(machine => (
-      <li key={machine.content} id="non-exist-machine" >
-        <span>{machine.content}</span>
-      </li >
-    ));
+  const inactiveNavList = inactive.sort(alphabeticSort).map((machine) => (
+    <li
+      key={machine.content}
+      id="non-exist-machine"
+      style={sortedDisplayAble ? { display: "none" } : undefined}
+    >
+      <span>{machine.content}</span>
+    </li>
+  ));
 
   return (
     <nav>
@@ -95,7 +138,11 @@ function NavBar({ nbdata }: { nbdata: NavBarData }) {
   );
 }
 
-function SearchForm(props: { q: string, searching?: boolean, submit: SubmitFunction }) {
+function SearchForm(props: {
+  q: string;
+  searching?: boolean;
+  submit: SubmitFunction;
+}) {
   const { q, searching, submit } = props;
   return (
     <div>
@@ -113,31 +160,21 @@ function SearchForm(props: { q: string, searching?: boolean, submit: SubmitFunct
             submit(event.currentTarget.form, { replace: !isFirstSearch });
           }}
         />
-        <div
-          id="search-spinner"
-          aria-hidden
-          hidden={!searching}
-        />
-        <div
-          className="sr-only"
-          aria-live="polite"
-        ></div>
+        <div id="search-spinner" aria-hidden hidden={!searching} />
+        <div className="sr-only" aria-live="polite"></div>
       </Form>
     </div>
-  )
+  );
 }
 
 export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  let { data: extMachines, error: extMachErr } = useSWR("ExhaustedMachineList", getMachines);
-  let { data: dirs, error: dirsError } = useSWR<GitHubContent[]>("/", ghCntFetcher);
-  if (dirsError || extMachErr) {
-    throw new Error(`Fail to fetch machines data ${dirsError || extMachErr}`);
-  }
 
-  const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q");
+  const searching =
+    navigation.location &&
+    new URLSearchParams(navigation.location.search).has("q");
 
   useEffect(() => {
     const element = document.getElementById("q") as HTMLInputElement;
@@ -149,16 +186,12 @@ export default function Root() {
       <div id="sidebar">
         <h1>Unmatched Status</h1>
         <SearchForm q={q} searching={searching} submit={submit} />
-        <NavBar
-          nbdata={{
-            dirs: dirs,
-            machMaps: extMachines,
-            isLoading: !dirsError && !dirs && !extMachines && !extMachErr,
-            search: q,
-          }}
-        />
+        <NavBar barData={{ search: q }} />
       </div>
-      <div id="detail" className={navigation.state === "loading" ? "loading" : ""}>
+      <div
+        id="detail"
+        className={navigation.state === "loading" ? "loading" : ""}
+      >
         <Outlet />
       </div>
     </>
