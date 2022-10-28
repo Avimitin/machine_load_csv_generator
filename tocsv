@@ -8,14 +8,19 @@ require 'sqlite3'
 require 'time'
 require 'pathname'
 require 'fileutils'
+require 'json'
 
 #
 # Configuration
 #
 
+# Where to load database
 DATA_PATH = Pathname.new(ENV['DATA_PATH'])
-CSV_OUTPUT = Pathname.new(ENV['CSV_OUTPUT_DIR'])
+# Where to store CSV files
+CSV_OUTPUT_DIR = Pathname.new(ENV['CSV_OUTPUT_DIR'])
+# Where the database located
 DB_FILENAME = DATA_PATH + ENV['DB_FILENAME']
+# Current month
 DATETIME = Time.new.strftime('%Y-%m')
 HEADERS = ['DateTime', 'Logined Users', 'Machine Load'].freeze
 
@@ -42,20 +47,42 @@ def get_data(db, machine_id)
     .collect { |row| row }
 end
 
+def init_location
+  filepath = CSV_OUTPUT_DIR.join('location.json')
+  file = File.open(filepath, 'r')
+  original = file.read
+  file.close
+  if original && !original.empty?
+    JSON.parse(original)
+  else
+    {}
+  end
+end
+
+def save_location(loc)
+  filepath = CSV_OUTPUT_DIR.join('location.json')
+  file = File.open(filepath, 'w+')
+  file.write(JSON.generate(loc))
+  file.close
+end
+
 #
 # Main logic
 #
 
 db = SQLite3::Database.open(DB_FILENAME)
 machines = get_all_machine(db)
+location = init_location
 
 machines.each do |m|
   record = get_data(db, m.id)
-  prefix = CSV_OUTPUT.join("#{m.name}-#{m.team}")
+  dirname = "#{m.name}-#{m.team}"
+  prefix = CSV_OUTPUT_DIR.join(dirname)
   FileUtils.mkdir_p(prefix)
-  filename = prefix.join("#{DATETIME}.csv")
+  filename = "#{DATETIME}.csv"
+  filepath = prefix.join(filename)
 
-  CSV.open(filename, 'w') do |csv|
+  CSV.open(filepath, 'w') do |csv|
     csv << HEADERS
     # rec[0] is test datetime, rec[1] is users, rec[2] is load
     record.each do |rec|
@@ -64,7 +91,22 @@ machines.each do |m|
       csv << rec
     end
   end
+
+  map = location[m.name]
+  if map
+    data = map['data']
+    data.push(filename) unless data.include? filename
+    map['data'] = data
+  else
+    location[m.name] = {
+      path: dirname,
+      data: [filename]
+    }
+  end
+
   puts "#{filename} generated"
 end
+
+save_location(location)
 
 puts 'Process done'
