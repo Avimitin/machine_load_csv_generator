@@ -10,15 +10,7 @@ import {
 } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import {
-  getMachines,
-  ghCntFetcher,
-  GitHubContent,
-  Location,
-  MachMap,
-  useGitHub,
-  UseGitHubResp,
-} from "../data";
+import { Location, MachMap, useGitHub, UseGitHubResp } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -27,7 +19,6 @@ export async function loader({ request }: any) {
 }
 
 interface data {
-  boards: GitHubContent[];
   q: string;
 }
 

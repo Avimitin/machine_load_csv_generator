@@ -4,7 +4,7 @@ import {
   useLoaderData,
   useRouteError,
 } from "react-router-dom";
-import { getLoadsByNameAndDate, Record, useGitHub } from "../data";
+import { Location, Record, useGitHub } from "../data";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -97,12 +97,12 @@ function DateMenu({ options, onChange }: DateMenuProps) {
 }
 
 function BoardInfo({ records }: { records: Record[] }) {
-  const load = records.map((rec) => rec.load);
+  const load = records.map((rec) => rec.p95Load);
   const minLoad = Math.min(...load);
   const maxLoad = Math.max(...load);
   const avgLoad =
     load.length > 1 ? load.reduce((a, b) => a + b) / load.length : load[0];
-  const idx = Math.round(load.length * 0.95) - 1;
+  const idx = Math.ceil(load.length * 0.95) - 1;
   const sorted = load.sort();
   const p95Load = sorted[idx];
 
@@ -156,38 +156,43 @@ export default function Board() {
   }
   if (location.error) {
     console.error(location.error);
-    return <BoardNotFound/>;
+    return <BoardNotFound />;
   }
   const locData = location.data;
   if (!locData) {
-    return <BoardNotFound />
+    return <BoardNotFound />;
   }
 
   const { id } = useLoaderData() as { id: string };
-  const machine = locData["fuck"];
-  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
+  const machine = locData[id];
+  if (!machine) {
+    return <BoardNotFound />;
+  }
 
-  const { data, error } = useSWR([id, selectedDate], getLoadsByNameAndDate);
+  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
+  const records = useGitHub<Record[]>({
+    file: `${machine.path}/${
+      selectedDate ? selectedDate.value + ".json" : machine.data[0]
+    }`,
+  });
+  if (records.isLoading) {
+    return <BoardNotFound />;
+  }
+  if (records.error) {
+    console.error(records.error);
+    return <BoardNotFound />;
+  }
+  if (!records.data) {
+    return <BoardNotFound />;
+  }
 
   const onChange = (option: DateMenuOption | null) => {
     setSelectedDate(option);
   };
 
-  if (error) {
-    return <BoardNotFound/>;
-  }
-
-  if (!data) {
-    return (
-      <div id="zero-state">
-        <h2>Loading...</h2>
-      </div>
-    );
-  }
-
-  const { recordResult, dateList } = data;
-  const dateOptions = dateList.map((d) => {
-    return { value: d, label: d };
+  const dateOptions = machine.data.map((d) => {
+    const date = d.replace(".json", "");
+    return { value: date, label: date };
   });
 
   const highlightLowUsage = (ctx: ScriptableLineSegmentContext) => {
@@ -196,10 +201,10 @@ export default function Board() {
       : undefined;
   };
 
-  const labels = recordResult.map((rec) => rec.ttime.getDate());
+  const labels = records.data.map((rec) => rec.date.getDate());
   const users = {
     label: "Loggedin Users",
-    data: recordResult.map((rec) => rec.users),
+    data: records.data.map((rec) => rec.p95Users),
     borderColor: "rgb(53, 162, 235)",
     backgroundColor: "rgba(53, 162, 235, 0.5)",
     tension: 0.4,
@@ -208,7 +213,7 @@ export default function Board() {
   const loads = {
     label: "Machine CPU Usage",
     fill: true,
-    data: recordResult.map((rec) => rec.load),
+    data: records.data.map((rec) => rec.p95Load),
     borderColor: "rgb(115,238,163)",
     backgroundColor: "rgba(115,238,163,0.7)",
     yAxisID: "load",
@@ -225,7 +230,7 @@ export default function Board() {
     <div>
       <DateMenu options={dateOptions} onChange={onChange} />
       <Line options={options} data={{ labels, datasets: [users, loads] }} />
-      <BoardInfo records={recordResult} />
+      <BoardInfo records={records.data} />
     </div>
   );
 }
