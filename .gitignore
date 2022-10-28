@@ -3,3 +3,4 @@
 .env
 statics
 machMap.json
+local/
