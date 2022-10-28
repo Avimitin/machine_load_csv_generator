@@ -1,3 +1,5 @@
+import useSWR from "swr";
+
 export interface Record {
   ttime: Date,
   users: number,
@@ -123,7 +125,44 @@ export async function ghCntFetcher<T>(path: string) {
   return files;
 }
 
+export interface UseGitHubProps {
+  file: string
+}
+
+export interface UseGitHubResp<T> {
+  isLoading: boolean,
+  error?: Error,
+  data?: T,
+}
+
+export function useGitHub<T>({ file }: UseGitHubProps): UseGitHubResp<T> {
+  const url = new URL(file, "https://raw.githubusercontent.com/Avimitin/unmatched-load-data/master/")
+  const fetcher = (url: URL) => fetch(url).then(resp => {
+    if (resp.status !== 200) {
+      throw new Error(`Fail to request from GitHub: ${resp.statusText}`);
+    }
+
+    return resp.json();
+  });
+
+  const { data, error } = useSWR<T, Error>(url, fetcher);
+
+  return {
+    isLoading: !error && !data,
+    error: error,
+    data: data,
+  }
+}
+
 export interface MachineAliasInfo {
   alias: string,
   belong: string,
 }
+
+export interface Result {
+  date: Date,
+  p95Load: number,
+  p95Users: number,
+}
+
+export type Location = Map<string, { path: string, data: string[] }>

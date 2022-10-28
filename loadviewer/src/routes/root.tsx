@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { NavLink, Form, useLoaderData, useNavigation, useSubmit, SubmitFunction } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { getMachines, ghCntFetcher, GitHubContent, MachMap } from "../data";
+import { getMachines, ghCntFetcher, GitHubContent, Location, MachMap, useGitHub, UseGitHubResp } from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -17,9 +17,8 @@ interface data {
 }
 
 interface NavBarData {
-  dirs?: GitHubContent[],
-  machMaps?: MachMap[],
-  isLoading: boolean,
+  machMap: UseGitHubResp<MachMap[]>,
+  location: UseGitHubResp<Location>,
   search?: string,
 }
 
@@ -36,30 +35,42 @@ function Nav({ to, content }: { to: string, content: string }) {
   );
 }
 
-function NavBar({ nbdata }: { nbdata: NavBarData }) {
-  if (nbdata.isLoading) {
+function NavBar({ barData }: { barData: NavBarData }) {
+  if (barData.location.isLoading || barData.machMap.isLoading) {
     return (<nav><div><h4>Loading...</h4></div></nav>)
   }
-  if (!nbdata.machMaps || nbdata.machMaps.length === 0 || !nbdata.dirs || nbdata.dirs.length === 0) {
+
+  if (barData.machMap.error || barData.machMap.error) {
+    console.error(barData.machMap.error || barData.machMap.error)
+    return (<nav><p><i>Fail to load</i></p></nav>)
+  }
+
+  if (!barData.machMap.data || !barData.location.data) {
     return (<nav><p><i>No board</i></p></nav>)
   }
 
-  const dirs = nbdata.dirs.filter(f => f.type === "dir");
+  let machMap = barData.machMap.data;
+  const location = barData.location.data;
 
   // sort the navbar list by search params
-  if (nbdata.search) {
-    const filtered = matchSorter(nbdata.machMaps, nbdata.search, { keys: ["name"] });
-    nbdata.machMaps = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
+  if (barData.search) {
+    const filtered = matchSorter(machMap, barData.search, { keys: ["name"] });
+    machMap = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
   }
 
   type DisplayAble = { link: string | null, content: string };
 
   // convert navbar data to display data
-  const display: DisplayAble[] = nbdata.machMaps.map(mach => {
-    const wanted = dirs.find(d => d.path.search(mach.name) !== -1);
+  const display: DisplayAble[] = machMap.map(mach => {
+    let match;
+    for (const [key, value] of location) {
+      if (mach.name === key) {
+        match = value;
+      }
+    }
     const content = `${mach.name} (${mach.team})`;
     return {
-      link: wanted !== undefined ? wanted.path : null,
+      link: match ? match.path : null,
       content: content,
     }
   })
@@ -131,11 +142,8 @@ export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  let { data: extMachines, error: extMachErr } = useSWR("ExhaustedMachineList", getMachines);
-  let { data: dirs, error: dirsError } = useSWR<GitHubContent[]>("/", ghCntFetcher);
-  if (dirsError || extMachErr) {
-    throw new Error(`Fail to fetch machines data ${dirsError || extMachErr}`);
-  }
+  const machMap = useGitHub<MachMap[]>({ file: "machMap.json" });
+  const location = useGitHub<Location>({ file: "location.json" });
 
   const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q");
 
@@ -149,14 +157,7 @@ export default function Root() {
       <div id="sidebar">
         <h1>Unmatched Status</h1>
         <SearchForm q={q} searching={searching} submit={submit} />
-        <NavBar
-          nbdata={{
-            dirs: dirs,
-            machMaps: extMachines,
-            isLoading: !dirsError && !dirs && !extMachines && !extMachErr,
-            search: q,
-          }}
-        />
+        <NavBar barData={{ machMap: machMap, location: location, search: q }} />
       </div>
       <div id="detail" className={navigation.state === "loading" ? "loading" : ""}>
         <Outlet />
