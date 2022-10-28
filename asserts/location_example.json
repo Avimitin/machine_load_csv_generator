@@ -1,0 +1,16 @@
+{
+  "larvesta": {
+    "path": "larvesta-arch",
+    "data": [
+      "2022-10.json",
+      "2022-11.json"
+    ]
+  },
+  "reshiram": {
+    "path": "reshiram-arch",
+    "data": [
+      "2022-10.json",
+      "2022-11.json"
+    ]
+  }
+}
