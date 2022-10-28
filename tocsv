@@ -30,11 +30,15 @@ def get_all_machine(db)
 end
 
 def get_data(db, machine_id)
-  db
-    .query(
-      "SELECT DATETIME(ttime, 'unixepoch') as isodate, users, load FROM record WHERE machine=?",
-      machine_id
-    )
+  db.query("SELECT DATETIME(ttime, 'unixepoch') as isodate, users, load
+      FROM record
+      WHERE machine=?
+      AND isodate
+      BETWEEN
+        DATE('now', 'start of month')
+      AND
+        DATE('now', 'start of month', '+1 month', '-1 day')",
+           machine_id)
     .collect { |row| row }
 end
 
