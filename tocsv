@@ -2,7 +2,6 @@
 
 # frozen_string_literal: true
 
-require 'csv'
 require 'dotenv/load'
 require 'sqlite3'
 require 'time'
@@ -29,27 +28,57 @@ HEADERS = ['DateTime', 'Logined Users', 'Machine Load'].freeze
 #
 
 Machine = Struct.new('Machine', :id, :name, :team)
+Record = Struct.new('Record', :ttime, :users, :load)
 
 def get_all_machine(db)
   db.execute('SELECT id, name, team FROM machine').collect { |row| Machine.new(row[0], row[1], row[2]) }
 end
 
 def get_data(db, machine_id)
-  db.query("SELECT DATETIME(ttime, 'unixepoch') as isodate, users, load
+  db.query("SELECT ttime, users, load
       FROM record
       WHERE machine=?
-      AND isodate
+      AND DATE(ttime, 'unixepoch')
       BETWEEN
         DATE('now', 'start of month')
       AND
         DATE('now', 'start of month', '+1 month', '-1 day')",
            machine_id)
-    .collect { |row| row }
+    .collect { |row| Record.new(Time.at(row[0]), row[1], row[2]) }
+end
+
+def p95_by(records, by)
+  sorted = records.sort_by do |rec|
+    rec[by]
+  end
+  sorted[(sorted.length * 0.95).ceil - 1][by]
+end
+
+def filter_data(records)
+  return records if records.length == 1
+
+  result = []
+  i = 0
+  j = 0
+
+  while j < records.length
+    if records[i].ttime.day != records[j].ttime.day
+      slice = records[i..j]
+      rec = { date: records[i].ttime, p95Users: p95_by(slice, :users), p95Load: p95_by(slice, :load) }
+      result.push(rec)
+      i = j
+    end
+    j += 1
+  end
+
+  result
 end
 
 def init_location
   filepath = CSV_OUTPUT_DIR.join('location.json')
-  file = File.open(filepath, 'r')
+  file = File.open(filepath, 'r') if File.exist?(filepath)
+  return {} if file.nil?
+
   original = file.read
   file.close
   if original && !original.empty?
@@ -79,17 +108,13 @@ machines.each do |m|
   dirname = "#{m.name}-#{m.team}"
   prefix = CSV_OUTPUT_DIR.join(dirname)
   FileUtils.mkdir_p(prefix)
-  filename = "#{DATETIME}.csv"
+  filename = "#{DATETIME}.json"
   filepath = prefix.join(filename)
 
-  CSV.open(filepath, 'w') do |csv|
-    csv << HEADERS
-    # rec[0] is test datetime, rec[1] is users, rec[2] is load
-    record.each do |rec|
-      # unmatched have 4 cpu cores
-      rec[2] = ((rec[2] / 4) * 100).round(3)
-      csv << rec
-    end
+  p95data = filter_data(record)
+  p95data = JSON.generate(p95data)
+  File.open(filepath, 'w') do |f|
+    f.write(p95data)
   end
 
   map = location[m.name]
@@ -104,7 +129,7 @@ machines.each do |m|
     }
   end
 
-  puts "#{filename} generated"
+  puts "#{filepath} generated"
 end
 
 save_location(location)
