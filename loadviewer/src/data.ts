@@ -135,17 +135,18 @@ export interface UseGitHubResp<T> {
   data?: T,
 }
 
+async function ghRawFetch<T>(file: string | string[]): Promise<T> {
+  const suffix = typeof(file) === "string" ? file : file.join("/");
+  const url = new URL(suffix, "https://raw.githubusercontent.com/Avimitin/unmatched-load-data/master/")
+  const resp = await fetch(url);
+  if (resp.status !== 200) {
+    throw new Error(`Fail to request from GitHub: ${resp.statusText}`);
+  }
+  return await resp.json();
+}
+
 export function useGitHub<T>({ file }: UseGitHubProps): UseGitHubResp<T> {
-  const url = new URL(file, "https://raw.githubusercontent.com/Avimitin/unmatched-load-data/master/")
-  const fetcher = (url: URL) => fetch(url).then(resp => {
-    if (resp.status !== 200) {
-      throw new Error(`Fail to request from GitHub: ${resp.statusText}`);
-    }
-
-    return resp.json();
-  });
-
-  const { data, error } = useSWR<T, Error>(url, fetcher);
+  const { data, error } = useSWR<T>(file, ghRawFetch);
 
   return {
     isLoading: !error && !data,
@@ -165,4 +166,9 @@ export interface Result {
   p95Users: number,
 }
 
-export type Location = Map<string, { path: string, data: string[] }>
+export interface Location {
+  [mach: string]: {
+    path: string,
+    data: string[],
+  }
+}

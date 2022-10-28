@@ -1,9 +1,24 @@
 import { matchSorter } from "match-sorter";
 import { useEffect } from "react";
-import { NavLink, Form, useLoaderData, useNavigation, useSubmit, SubmitFunction } from "react-router-dom";
+import {
+  NavLink,
+  Form,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+  SubmitFunction,
+} from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import useSWR from "swr";
-import { getMachines, ghCntFetcher, GitHubContent, Location, MachMap, useGitHub, UseGitHubResp } from "../data";
+import {
+  getMachines,
+  ghCntFetcher,
+  GitHubContent,
+  Location,
+  MachMap,
+  useGitHub,
+  UseGitHubResp,
+} from "../data";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -12,17 +27,15 @@ export async function loader({ request }: any) {
 }
 
 interface data {
-  boards: GitHubContent[],
-  q: string,
+  boards: GitHubContent[];
+  q: string;
 }
 
 interface NavBarData {
-  machMap: UseGitHubResp<MachMap[]>,
-  location: UseGitHubResp<Location>,
-  search?: string,
+  search?: string;
 }
 
-function Nav({ to, content }: { to: string, content: string }) {
+function Nav({ to, content }: { to: string; content: string }) {
   return (
     <NavLink
       to={`board/${to}`}
@@ -36,65 +49,94 @@ function Nav({ to, content }: { to: string, content: string }) {
 }
 
 function NavBar({ barData }: { barData: NavBarData }) {
-  if (barData.location.isLoading || barData.machMap.isLoading) {
-    return (<nav><div><h4>Loading...</h4></div></nav>)
+  let machMap = useGitHub<MachMap[]>({ file: "machMap.json" });
+  const location = useGitHub<Location>({ file: "location.json" });
+  if (location.isLoading || machMap.isLoading) {
+    return (
+      <nav>
+        <div>
+          <h4>Loading...</h4>
+        </div>
+      </nav>
+    );
   }
 
-  if (barData.machMap.error || barData.machMap.error) {
-    console.error(barData.machMap.error || barData.machMap.error)
-    return (<nav><p><i>Fail to load</i></p></nav>)
+  if (machMap.error || machMap.error) {
+    console.error(machMap.error || machMap.error);
+    return (
+      <nav>
+        <p>
+          <i>Fail to load</i>
+        </p>
+      </nav>
+    );
   }
 
-  if (!barData.machMap.data || !barData.location.data) {
-    return (<nav><p><i>No board</i></p></nav>)
+  if (!machMap.data) {
+    return (
+      <nav>
+        <p>
+          <i>No board</i>
+        </p>
+      </nav>
+    );
   }
 
-  let machMap = barData.machMap.data;
-  const location = barData.location.data;
-
-  // sort the navbar list by search params
-  if (barData.search) {
-    const filtered = matchSorter(machMap, barData.search, { keys: ["name"] });
-    machMap = filtered.sort((a, b) => a.name > b.name ? 1 : -1);
+  const locData = location.data;
+  if (!locData) {
+    return (
+      <nav>
+        <p>
+          <i>No test results</i>
+        </p>
+      </nav>
+    );
   }
 
-  type DisplayAble = { link: string | null, content: string };
-
-  // convert navbar data to display data
-  const display: DisplayAble[] = machMap.map(mach => {
-    let match;
-    for (const [key, value] of location) {
-      if (mach.name === key) {
-        match = value;
-      }
-    }
-    const content = `${mach.name} (${mach.team})`;
-    return {
-      link: match ? match.path : null,
-      content: content,
-    }
-  })
-
+  type DisplayAble = { link: string | null; content: string };
   const active: DisplayAble[] = [];
   const inactive: DisplayAble[] = [];
-  display.forEach(dp => dp.link ? active.push(dp) : inactive.push(dp));
-  const alphabeticSort = (a: DisplayAble, b: DisplayAble) => a.content < b.content ? -1 : 1;
 
-  const activeNavList = active
+  // convert navbar data to display data
+  machMap.data.forEach((mach) => {
+    const content = `${mach.name} (${mach.team})`;
+    const data = locData[mach.name];
+    data
+      ? active.push({ link: data.path, content: content })
+      : inactive.push({ link: null, content: content });
+  });
+
+  // sort the navbar list by search params
+  let sortedDisplayAble: DisplayAble[] | null = null;
+  if (barData.search) {
+    const filtered = matchSorter(active, barData.search, {
+      keys: ["content"],
+    });
+    sortedDisplayAble = filtered.sort((a, b) =>
+      a.content > b.content ? 1 : -1
+    );
+  }
+
+  const alphabeticSort = (a: DisplayAble, b: DisplayAble) =>
+    a.content < b.content ? -1 : 1;
+
+  const activeNavList = (sortedDisplayAble ? sortedDisplayAble : active)
     .sort(alphabeticSort)
-    .map(machine => (
+    .map((machine) => (
       <li key={machine.content}>
         <Nav to={machine.link as string} content={machine.content} />
       </li>
     ));
 
-  const inactiveNavList = inactive
-    .sort(alphabeticSort)
-    .map(machine => (
-      <li key={machine.content} id="non-exist-machine" >
-        <span>{machine.content}</span>
-      </li >
-    ));
+  const inactiveNavList = inactive.sort(alphabeticSort).map((machine) => (
+    <li
+      key={machine.content}
+      id="non-exist-machine"
+      style={sortedDisplayAble ? { display: "none" } : undefined}
+    >
+      <span>{machine.content}</span>
+    </li>
+  ));
 
   return (
     <nav>
@@ -106,7 +148,11 @@ function NavBar({ barData }: { barData: NavBarData }) {
   );
 }
 
-function SearchForm(props: { q: string, searching?: boolean, submit: SubmitFunction }) {
+function SearchForm(props: {
+  q: string;
+  searching?: boolean;
+  submit: SubmitFunction;
+}) {
   const { q, searching, submit } = props;
   return (
     <div>
@@ -124,28 +170,21 @@ function SearchForm(props: { q: string, searching?: boolean, submit: SubmitFunct
             submit(event.currentTarget.form, { replace: !isFirstSearch });
           }}
         />
-        <div
-          id="search-spinner"
-          aria-hidden
-          hidden={!searching}
-        />
-        <div
-          className="sr-only"
-          aria-live="polite"
-        ></div>
+        <div id="search-spinner" aria-hidden hidden={!searching} />
+        <div className="sr-only" aria-live="polite"></div>
       </Form>
     </div>
-  )
+  );
 }
 
 export default function Root() {
   const { q } = useLoaderData() as data;
   const navigation = useNavigation();
   const submit = useSubmit();
-  const machMap = useGitHub<MachMap[]>({ file: "machMap.json" });
-  const location = useGitHub<Location>({ file: "location.json" });
 
-  const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q");
+  const searching =
+    navigation.location &&
+    new URLSearchParams(navigation.location.search).has("q");
 
   useEffect(() => {
     const element = document.getElementById("q") as HTMLInputElement;
@@ -157,9 +196,12 @@ export default function Root() {
       <div id="sidebar">
         <h1>Unmatched Status</h1>
         <SearchForm q={q} searching={searching} submit={submit} />
-        <NavBar barData={{ machMap: machMap, location: location, search: q }} />
+        <NavBar barData={{ search: q }} />
       </div>
-      <div id="detail" className={navigation.state === "loading" ? "loading" : ""}>
+      <div
+        id="detail"
+        className={navigation.state === "loading" ? "loading" : ""}
+      >
         <Outlet />
       </div>
     </>
