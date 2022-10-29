@@ -66,7 +66,7 @@ def filter_data(records)
       slice = records[i..j]
       cpu_usage = ((p95_by(slice, :load) / 4) * 100).round(3)
       rec = {
-        date: records[i].ttime,
+        date: records[i].ttime.iso8601,
         p95Users: p95_by(slice, :users),
         p95Load: cpu_usage
       }
