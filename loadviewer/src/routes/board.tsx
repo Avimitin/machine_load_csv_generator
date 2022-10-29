@@ -49,17 +49,32 @@ const options = {
     },
   },
   scales: {
+    x: {
+      display: true,
+      title: {
+        display: true,
+        text: "Day of the month",
+      }
+    },
     load: {
       type: "linear" as const,
       display: true,
       position: "left" as const,
       max: 400,
       min: 0,
+      title: {
+        display: true,
+        text: "CPU Usage (100%)"
+      },
     },
     users: {
       type: "linear" as const,
       display: true,
       position: "right" as const,
+      title: {
+        display: true,
+        text: "Amount of users"
+      },
       grid: {
         drawOnChartArea: false,
       },
@@ -207,9 +222,9 @@ export function Board({ selectedDate, setDate, machine }: BoardProps) {
     return { value: date, label: date };
   });
 
-  const highlightLowUsage = (ctx: ScriptableLineSegmentContext) => {
-    return ctx.p0.parsed.y < 10 || ctx.p1.parsed.y < 10
-      ? "rgba(192,75,75,0.5)"
+  const hlHighUsage = (ctx: ScriptableLineSegmentContext) => {
+    return ctx.p0.parsed.y > 100 || ctx.p1.parsed.y > 100
+      ? "rgba(192,75,75,0.8)"
       : undefined;
   };
 
@@ -232,9 +247,9 @@ export function Board({ selectedDate, setDate, machine }: BoardProps) {
     tension: 0.4,
     segment: {
       borderColor: (ctx: ScriptableLineSegmentContext) =>
-        highlightLowUsage(ctx),
+        hlHighUsage(ctx),
       backgroundColor: (ctx: ScriptableLineSegmentContext) =>
-        highlightLowUsage(ctx),
+        hlHighUsage(ctx),
     },
   };
 
