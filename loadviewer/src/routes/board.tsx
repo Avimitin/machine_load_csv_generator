@@ -4,7 +4,7 @@ import {
   useLoaderData,
   useRouteError,
 } from "react-router-dom";
-import { Location, Record, useGitHub } from "../data";
+import { Location, Machine, Record, useGitHub } from "../data";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -144,8 +144,11 @@ function BoardNotFound() {
   );
 }
 
-export default function Board() {
+export default function Details() {
   const location = useGitHub<Location>({ file: "location.json" });
+  const { id } = useLoaderData() as { id: string };
+  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
+
   if (location.isLoading) {
     return (
       <div id="zero-state">
@@ -162,18 +165,28 @@ export default function Board() {
     return <BoardNotFound />;
   }
 
-  const { id } = useLoaderData() as { id: string };
-  const machine = locData[id];
+  const machine = locData[id.replace(/-\w+$/, "")];
   if (!machine) {
     return <BoardNotFound />;
   }
 
-  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
+  return <Board selectedDate={selectedDate}
+    setDate={setSelectedDate}
+    machine={machine} />
+}
+
+interface BoardProps {
+  selectedDate: DateMenuOption | null,
+  setDate: React.Dispatch<React.SetStateAction<DateMenuOption | null>>,
+  machine: Machine,
+}
+
+export function Board({ selectedDate, setDate, machine }: BoardProps) {
   const records = useGitHub<Record[]>({
-    file: `${machine.path}/${
-      selectedDate ? selectedDate.value + ".json" : machine.data[0]
-    }`,
+    file: `${machine.path}/${selectedDate ? selectedDate.value + ".json" : machine.data[0]
+      }`,
   });
+
   if (records.isLoading) {
     return <BoardNotFound />;
   }
@@ -186,7 +199,7 @@ export default function Board() {
   }
 
   const onChange = (option: DateMenuOption | null) => {
-    setSelectedDate(option);
+    setDate(option);
   };
 
   const dateOptions = machine.data.map((d) => {
@@ -200,7 +213,7 @@ export default function Board() {
       : undefined;
   };
 
-  const labels = records.data.map((rec) => rec.date.getDate());
+  const labels = records.data.map((rec) => new Date(rec.date).getDate());
   const users = {
     label: "Loggedin Users",
     data: records.data.map((rec) => rec.p95Users),

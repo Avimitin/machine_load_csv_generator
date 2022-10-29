@@ -43,14 +43,16 @@ export interface MachineAliasInfo {
 }
 
 export interface Record {
-  date: Date;
+  date: string;
   p95Load: number;
   p95Users: number;
 }
 
+export interface Machine {
+  path: string;
+  data: string[];
+}
+
 export interface Location {
-  [mach: string]: {
-    path: string;
-    data: string[];
-  };
+  [mach: string]: Machine
 }

@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider, Route } from "react-router-dom";
 import './index.css'
 import Root, { loader as rootLoader } from "./routes/root";
 import ErrorPage from './error';
-import Board, { loader as boardLoader, ErrorPage as BoardErrorPage } from './routes/board';
+import Details, { loader as boardLoader, ErrorPage as BoardErrorPage } from './routes/board';
 import Index, { ErrorPage as IndexErrorPage } from './routes';
 
 const router = createBrowserRouter([
@@ -16,7 +16,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/board/:id",
-        element: <Board />,
+        element: <Details />,
         loader: boardLoader,
         errorElement: <BoardErrorPage />,
       },
