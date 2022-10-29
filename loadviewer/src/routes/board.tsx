@@ -203,7 +203,11 @@ export function Board({ selectedDate, setDate, machine }: BoardProps) {
   });
 
   if (records.isLoading) {
-    return <BoardNotFound />;
+    return (
+      <div id="zero-state">
+        <h2>Loading...</h2>
+      </div>
+    );
   }
   if (records.error) {
     console.error(records.error);
