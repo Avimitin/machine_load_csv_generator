@@ -64,7 +64,12 @@ def filter_data(records)
   while j < records.length
     if records[i].ttime.day != records[j].ttime.day
       slice = records[i..j]
-      rec = { date: records[i].ttime, p95Users: p95_by(slice, :users), p95Load: p95_by(slice, :load) }
+      cpu_usage = ((p95_by(slice, :load) / 4) * 100).round(3)
+      rec = {
+        date: records[i].ttime,
+        p95Users: p95_by(slice, :users),
+        p95Load: cpu_usage
+      }
       result.push(rec)
       i = j
     end
