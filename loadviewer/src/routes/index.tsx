@@ -9,7 +9,7 @@ export default function Index() {
         <br/>
         Click the left navbar to view details of our board.
         <br/>
-        Gray (unselectable) machine means that this machine is offline.
+        Red (unselectable) machine means that this machine is offline.
       </p>
     </div>
   );
