@@ -111,6 +111,9 @@ function DateMenu({ options, onChange }: DateMenuProps) {
 }
 
 function BoardInfo({ records }: { records: Record[] }) {
+  if (records.length === 0) {
+    return <BoardNotFound />;
+  }
   const load = records.map((rec) => rec.p95Load);
   const minLoad = Math.min(...load);
   const maxLoad = Math.max(...load);
