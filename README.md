@@ -1,3 +1,7 @@
+# Uptime Collector
+
+A lightweight full-stack CPU usage collector, powered by Ruby and React JS.
+
 ## Design
 
 Backend is powered by Ruby script `prepare`, `fetch` and `tojson`.
@@ -9,8 +13,8 @@ Those data file will be uploaded to GitHub for later use by frontend.
 Frontend is powered by vite and React. It is a client side routing static page.
 Each request will try to download file from GitHub.
 
-Here is the current data repo: <https://github.com/Avimitin/unmatched-load-data>
-And here is the frontend: <https://unmatched-status.sh1mar.in>
+Here is the demo data repo: <https://github.com/Avimitin/unmatched-load-data>,
+And here is the demo frontend: <https://unmatched-status.sh1mar.in>.
 
 ## Usage
 
