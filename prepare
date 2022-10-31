@@ -12,7 +12,7 @@ DB_FILENAME = ENV['DB_FILENAME']
 
 Machine = Struct.new('Machine', :id, :name, :addr, :team)
 
-def init_machine_db(db, mach)
+def ensure_table(db)
   db.execute <<~SQL
     CREATE TABLE IF NOT EXISTS machine (
       id   INTEGER PRIMARY KEY,
@@ -22,9 +22,19 @@ def init_machine_db(db, mach)
       UNIQUE(name)
     );
   SQL
+end
+
+def init_machine_db(db, mach)
+  ensure_table(db)
 
   mach.each do |m|
-    db.execute('INSERT OR IGNORE INTO machine (id, name, addr, team) VALUES (?, ?, ?, ?)', m.id, m.name, m.addr, m.team)
+    query = <<~SQL
+      INSERT INTO machine (id, name, addr, team)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(id)
+      DO UPDATE SET name=?, addr=?, team=?;
+    SQL
+    db.execute(query, [m.id, m.name, m.addr, m.team, m.name, m.addr, m.team])
   end
 end
 
