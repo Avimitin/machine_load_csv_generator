@@ -14,8 +14,7 @@ require 'English'
 
 DATA_PATH = Pathname.new(ENV['DATA_PATH'])
 DB_FILENAME = DATA_PATH.join(ENV['DB_FILENAME'])
-PRIVATE_KEY = ENV['SSH_PRIVATE_KEY']
-LOGIN_USER = ENV['SSH_LOGIN_USER']
+SSH_CONFIG_PATH = ENV['SSH_CONFIG_PATH']
 
 #
 # Types and Functions
@@ -25,12 +24,8 @@ Machine = Struct.new('Machine', :id, :addr)
 LoadData = Struct.new(:users, :load)
 
 def ssh(machine)
-  if PRIVATE_KEY && LOGIN_USER
-    "ssh -i #{PRIVATE_KEY} #{LOGIN_USER}@#{machine}"
-  elsif PRIVATE_KEY
-    "ssh -i #{PRIVATE_KEY} #{machine}"
-  elsif LOGIN_USER
-    "ssh #{LOGIN_USER}@#{machine}"
+  if SSH_CONFIG_PATH
+    "ssh -F #{SSH_CONFIG_PATH} #{machine}"
   else
     "ssh #{machine}"
   end
