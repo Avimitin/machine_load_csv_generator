@@ -54,6 +54,15 @@ def p95_by(records, by)
   sorted[(sorted.length * 0.95).ceil - 1][by]
 end
 
+def p95_rec(slice)
+  cpu_usage = ((p95_by(slice, :load) / 4) * 100).round(3)
+  {
+    date: slice[0].ttime.iso8601,
+    p95Users: p95_by(slice, :users),
+    p95Load: cpu_usage
+  }
+end
+
 def filter_data(records)
   return records if records.length == 1
 
@@ -63,18 +72,14 @@ def filter_data(records)
 
   while j < records.length
     if records[i].ttime.day != records[j].ttime.day
-      slice = records[i..j]
-      cpu_usage = ((p95_by(slice, :load) / 4) * 100).round(3)
-      rec = {
-        date: records[i].ttime.iso8601,
-        p95Users: p95_by(slice, :users),
-        p95Load: cpu_usage
-      }
+      rec = p95_rec(records[i..j])
       result.push(rec)
       i = j
     end
     j += 1
   end
+
+  result.push(p95_rec(records)) if i.zero?
 
   result
 end
