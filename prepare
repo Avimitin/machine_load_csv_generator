@@ -7,11 +7,15 @@ require 'json'
 require 'dotenv/load'
 require 'pathname'
 
+# Where to find database
 DATA_PATH = Pathname.new(ENV['DATA_PATH'])
+# The filename of the sqlite database
 DB_FILENAME = ENV['DB_FILENAME']
 
+# Represent the machMap.json structure
 Machine = Struct.new('Machine', :id, :name, :addr, :team)
 
+# Create machine table
 def ensure_table(db)
   db.execute <<~SQL
     CREATE TABLE IF NOT EXISTS machine (
@@ -24,6 +28,7 @@ def ensure_table(db)
   SQL
 end
 
+# Initialize or update the machine table
 def init_machine_db(db, mach)
   ensure_table(db)
 
@@ -38,6 +43,7 @@ def init_machine_db(db, mach)
   end
 end
 
+# Initialize the record table, this is a increment only table
 def init_record_db(db)
   db.execute <<~SQL
     CREATE TABLE IF NOT EXISTS record (
@@ -50,6 +56,8 @@ def init_record_db(db)
     );
   SQL
 end
+
+# Main Logic
 
 db = SQLite3::Database.open(DATA_PATH.join(DB_FILENAME))
 data = JSON.parse(File.read(DATA_PATH.join('machMap.json')))

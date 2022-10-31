@@ -1,0 +1,6 @@
+{
+  "machines": [
+    { "id": 1, "name": "example1", "addr": "e1.com", "team": "t1" },
+    { "id": 2, "name": "example2", "addr": "127.0.0.1", "team": "t2" }
+  ]
+}

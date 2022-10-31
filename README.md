@@ -25,6 +25,9 @@ export DATA_PATH=/var/lib/analyze-data
 # Database name
 export DB_FILENAME=test.db
 
+# Copy and edit the machine details
+cp asserts/machMap.example.json machMap.json
+
 # Init database
 ./prepare
 
