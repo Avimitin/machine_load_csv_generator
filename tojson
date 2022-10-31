@@ -15,8 +15,8 @@ require 'json'
 
 # Where to load database
 DATA_PATH = Pathname.new(ENV['DATA_PATH'])
-# Where to store CSV files
-CSV_OUTPUT_DIR = Pathname.new(ENV['CSV_OUTPUT_DIR'])
+# Where to store data files
+OUTPUT_DIR = Pathname.new(ENV['OUTPUT_DIR'])
 # Where the database located
 DB_FILENAME = DATA_PATH + ENV['DB_FILENAME']
 # Current month
@@ -85,7 +85,7 @@ def filter_data(records)
 end
 
 def init_location
-  filepath = CSV_OUTPUT_DIR.join('location.json')
+  filepath = OUTPUT_DIR.join('location.json')
   file = File.open(filepath, 'r') if File.exist?(filepath)
   return {} if file.nil?
 
@@ -99,7 +99,7 @@ def init_location
 end
 
 def save_location(loc)
-  filepath = CSV_OUTPUT_DIR.join('location.json')
+  filepath = OUTPUT_DIR.join('location.json')
   file = File.open(filepath, 'w+')
   file.write(JSON.generate(loc))
   file.close
@@ -116,7 +116,7 @@ location = init_location
 machines.each do |m|
   record = get_data(db, m.id)
   dirname = "#{m.name}-#{m.team}"
-  prefix = CSV_OUTPUT_DIR.join(dirname)
+  prefix = OUTPUT_DIR.join(dirname)
   FileUtils.mkdir_p(prefix)
   filename = "#{DATETIME}.json"
   filepath = prefix.join(filename)
