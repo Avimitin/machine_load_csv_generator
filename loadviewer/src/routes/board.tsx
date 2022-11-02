@@ -100,12 +100,13 @@ interface DateMenuOption {
 interface DateMenuProps {
   options: DateMenuOption[];
   onChange: (op: DateMenuOption | null) => void;
+  selected: DateMenuOption | null;
 }
 
-function DateMenu({ options, onChange }: DateMenuProps) {
+function DateMenu({ options, onChange, selected }: DateMenuProps) {
   return (
     <div className="date-menu">
-      <Select defaultValue={options[0]} onChange={onChange} options={options} />
+      <Select defaultValue={selected || options[0]} onChange={onChange} options={options} />
     </div>
   );
 }
@@ -262,7 +263,7 @@ export function Board({ selectedDate, setDate, machine }: BoardProps) {
 
   return (
     <div>
-      <DateMenu options={dateOptions} onChange={onChange} />
+      <DateMenu options={dateOptions} onChange={onChange} selected={selectedDate} />
       <Line options={options} data={{ labels, datasets: [users, loads] }} />
       <BoardInfo records={records.data} />
     </div>
