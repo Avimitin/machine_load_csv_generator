@@ -20,6 +20,7 @@ import {
 import { Line } from "react-chartjs-2";
 import { useState } from "react";
 import Select from "react-select";
+import chartOptions from "../chart-options";
 
 ChartJS.register(
   CategoryScale,
@@ -31,58 +32,6 @@ ChartJS.register(
   Legend,
   Filler
 );
-
-const options = {
-  responsive: true,
-  interaction: {
-    mode: "index" as const,
-    intersect: false,
-  },
-  stacked: false,
-  plugins: {
-    legend: {
-      position: "top" as const,
-    },
-    title: {
-      display: true,
-      text: "CPU Usage & Loggedin Users",
-    },
-  },
-  scales: {
-    x: {
-      display: true,
-      title: {
-        display: true,
-        text: "Day of the month",
-      }
-    },
-    load: {
-      type: "linear" as const,
-      display: true,
-      position: "left" as const,
-      max: 400,
-      min: 0,
-      title: {
-        display: true,
-        text: "CPU Usage (100%)"
-      },
-    },
-    users: {
-      type: "linear" as const,
-      display: true,
-      position: "right" as const,
-      title: {
-        display: true,
-        text: "Amount of users"
-      },
-      grid: {
-        drawOnChartArea: false,
-      },
-      max: 20,
-      min: 0,
-    },
-  },
-};
 
 export async function loader({ params }: LoaderFunctionArgs) {
   if (params.id === undefined) {
@@ -273,7 +222,7 @@ export function Board({ machine }: BoardProps) {
   return (
     <div>
       <DateMenu options={dateOptions} onChange={onChange} selected={selectedDate} />
-      <Line options={options} data={{ labels, datasets: [users, loads] }} />
+      <Line options={chartOptions} data={{ labels, datasets: [users, loads] }} />
       <BoardInfo records={records.data} />
     </div>
   );
