@@ -166,7 +166,6 @@ function BoardNotFound() {
 export default function Details() {
   const location = useGitHub<Location>({ file: "location.json" });
   const { id } = useLoaderData() as { id: string };
-  const [selectedDate, setSelectedDate] = useState<DateMenuOption | null>(null);
 
   if (location.isLoading) {
     return (
@@ -189,21 +188,30 @@ export default function Details() {
     return <BoardNotFound />;
   }
 
-  return <Board selectedDate={selectedDate}
-    setDate={setSelectedDate}
-    machine={machine} />
+  return <Board machine={machine} />
 }
 
 interface BoardProps {
-  selectedDate: DateMenuOption | null,
-  setDate: React.Dispatch<React.SetStateAction<DateMenuOption | null>>,
   machine: Machine,
 }
 
-export function Board({ selectedDate, setDate, machine }: BoardProps) {
+function useDate(machID: string): [DateMenuOption | null, (opt: DateMenuOption) => void] {
+  const [storage, update] = useState<Map<string, DateMenuOption>>(new Map());
+
+  const setDate = (opt: DateMenuOption) => {
+    storage.set(machID, opt);
+    update(new Map(storage));
+  }
+
+  return [storage.get(machID) || null, setDate];
+}
+
+export function Board({ machine }: BoardProps) {
+  const [selectedDate, setDate] = useDate(machine.path);
   const records = useGitHub<Record[]>({
-    file: `${machine.path}/${selectedDate ? selectedDate.value + ".json" : machine.data[0]
-      }`,
+    file: `${machine.path}/${selectedDate ?
+      selectedDate.value + ".json"
+      : machine.data[0]}`,
   });
 
   if (records.isLoading) {
@@ -222,6 +230,7 @@ export function Board({ selectedDate, setDate, machine }: BoardProps) {
   }
 
   const onChange = (option: DateMenuOption | null) => {
+    if (!option) return;
     setDate(option);
   };
 
