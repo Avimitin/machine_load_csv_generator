@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "chart.js": "^3.9.1",
+    "immer": "^9.0.16",
     "match-sorter": "^6.3.1",
     "react": "^18.2.0",
     "react-chartjs-2": "^4.3.1",

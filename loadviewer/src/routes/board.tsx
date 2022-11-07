@@ -21,6 +21,9 @@ import { Line } from "react-chartjs-2";
 import { useState } from "react";
 import Select from "react-select";
 import chartOptions from "../chart-options";
+import produce, { enableMapSet } from "immer";
+
+enableMapSet();
 
 ChartJS.register(
   CategoryScale,
@@ -145,11 +148,14 @@ interface BoardProps {
 }
 
 function useDate(machID: string): [DateMenuOption | null, (opt: DateMenuOption) => void] {
-  const [storage, update] = useState<Map<string, DateMenuOption>>(new Map());
+  const [storage, setStorage] = useState<Map<string, DateMenuOption>>(new Map());
 
   const setDate = (opt: DateMenuOption) => {
-    storage.set(machID, opt);
-    update(new Map(storage));
+    setStorage(
+      produce((store) => {
+        store.set(machID, opt);
+      })
+    );
   }
 
   return [storage.get(machID) || null, setDate];
