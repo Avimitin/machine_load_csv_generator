@@ -49,20 +49,6 @@ interface DateMenuOption {
   label: string;
 }
 
-interface DateMenuProps {
-  options: DateMenuOption[];
-  onChange: (op: DateMenuOption | null) => void;
-  selected: DateMenuOption | null;
-}
-
-function DateMenu({ options, onChange, selected }: DateMenuProps) {
-  return (
-    <div className="date-menu">
-      <Select defaultValue={selected || options[0]} onChange={onChange} options={options} />
-    </div>
-  );
-}
-
 function BoardInfo({ records }: { records: Record[] }) {
   if (records.length === 0) {
     return <BoardNotFound />;
@@ -227,7 +213,11 @@ export function Board({ machine }: BoardProps) {
 
   return (
     <div>
-      <DateMenu options={dateOptions} onChange={onChange} selected={selectedDate} />
+      <Select
+        defaultValue={selectedDate || dateOptions[0]}
+        onChange={onChange}
+        options={dateOptions}
+      />
       <Line options={chartOptions} data={{ labels, datasets: [users, loads] }} />
       <BoardInfo records={records.data} />
     </div>
