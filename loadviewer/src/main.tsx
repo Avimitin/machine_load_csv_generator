@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { createBrowserRouter, RouterProvider, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Route, redirect } from "react-router-dom";
 import './index.css'
 import Root, { loader as rootLoader } from "./routes/root";
 import ErrorPage from './error';
@@ -14,6 +14,7 @@ const router = createBrowserRouter([
     loader: rootLoader,
     errorElement: <ErrorPage />,
     children: [
+      { path: "/board", loader: async () => { return redirect("/") } },
       {
         path: "/board/:id",
         element: <Details />,
